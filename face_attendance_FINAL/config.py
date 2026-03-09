@@ -57,9 +57,9 @@ class Config:
     MAIL_SERVER   = "smtp.gmail.com"
     MAIL_PORT     = 587
     MAIL_USE_TLS  = True
-    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "your_email@gmail.com")
-    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "your_app_password_here")
-    MAIL_FROM     = os.environ.get("MAIL_USERNAME", "your_email@gmail.com")
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "patilwebsite@gmail.com")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "djslnfinporpeurr")
+    MAIL_FROM     = os.environ.get("MAIL_USERNAME", "patilwebsite@gmail.com")
 
     # Low attendance threshold
     LOW_ATTENDANCE_THRESHOLD = 75   # % se kam → alert
