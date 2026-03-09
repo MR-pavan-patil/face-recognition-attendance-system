@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Manual Attendance{% endblock %}
+{% block breadcrumb %}Live Recognition / Manual{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Manual Attendance</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-person-check me-1"></i>Mark student present manually
+    </p>
+  </div>
+  <a href="{{ url_for('recognition.index') }}" class="btn-icon-secondary">
+    <i class="bi bi-camera-video me-2"></i>Face Recognition
+  </a>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="display:none;position:fixed;top:24px;right:24px;z-index:9999;
+  padding:14px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  backdrop-filter:blur(12px);border:1px solid;box-shadow:0 8px 24px rgba(0,0,0,.3);min-width:260px">
+</div>
+
+<div class="info-card animate-in">
+  <div class="info-card-header">
+    <h5 class="info-card-title">
+      <i class="bi bi-people-fill me-2 text-accent"></i>Students — Click to Mark Present
+    </h5>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input type="text" id="searchBox" placeholder="Search student..."
+             oninput="filterStudents()"
+             style="background:var(--bg-elevated);border:1px solid var(--border-color);border-radius:var(--radius-sm);
+                    color:var(--text-primary);padding:8px 14px;font-size:13px;outline:none;width:200px"/>
+      <span class="info-card-tag">{{ students|length }} students</span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table" id="studentTable">
+      <thead>
+        <tr>
+          <th>#</th><th>Student</th><th>Roll No</th><th>Department</th><th>Year</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for stu in students %}
+        <tr id="row-{{ stu.id }}" data-name="{{ stu.name.lower() }}" data-roll="{{ stu.roll_number.lower() }}">
+          <td class="row-num">{{ loop.index }}</td>
+          <td>
+            <div class="student-cell">
+              <div class="student-avatar">{{ stu.name[0].upper() }}</div>
+              <div>
+                <div class="student-name">{{ stu.name }}</div>
+                <div class="student-email">{{ stu.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="code-badge">{{ stu.roll_number }}</span></td>
+          <td>{{ stu.department }}</td>
+          <td><span class="year-tag">{{ stu.year }}</span></td>
+          <td>
+            <button id="btn-{{ stu.id }}"
+                    onclick="markPresent({{ stu.id }}, '{{ stu.name }}')"
+                    class="btn-icon-primary"
+                    style="padding:7px 18px;font-size:12px">
+              <i class="bi bi-check-circle-fill me-1"></i>Mark Present
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if not students %}
+  <div class="empty-state">
+    <i class="bi bi-people"></i>
+    <h5>No students registered</h5>
+    <p>Register students first before marking attendance.</p>
+    <a href="{{ url_for('students.register') }}" class="btn-icon-primary">Register Student</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markPresent(studentId, name) {
+  const btn = document.getElementById('btn-' + studentId);
+  btn.disabled   = true;
+  btn.innerHTML  = '<i class="bi bi-hourglass me-1"></i>Marking...';
+
+  fetch('/recognition/api/manual_mark', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify({ student_id: studentId })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Marked!';
+      btn.style.background = 'var(--green)';
+      showToast('✓  ' + name + ' marked present', 'green');
+    } else if (data.status === 'already_marked') {
+      btn.innerHTML = '<i class="bi bi-check2-all me-1"></i>Already Marked';
+      btn.style.background = 'var(--amber)';
+      btn.disabled = false;
+      showToast('↩  ' + data.message, 'amber');
+    } else {
+      btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Error';
+      btn.style.background = 'var(--red)';
+      btn.disabled = false;
+      showToast('✗  ' + (data.error || 'Error'), 'red');
+    }
+  })
+  .catch(() => {
+    btn.innerHTML = 'Error';
+    btn.disabled  = false;
+    showToast('Network error', 'red');
+  });
+}
+
+function showToast(msg, color) {
+  const toast = document.getElementById('toast');
+  const colors = {
+    green: ['rgba(45,212,113,.15)', 'var(--green)',  'rgba(45,212,113,.3)'],
+    amber: ['rgba(255,179,71,.15)', 'var(--amber)',  'rgba(255,179,71,.3)'],
+    red  : ['rgba(255,92,92,.15)',  'var(--red)',    'rgba(255,92,92,.3)'],
+  };
+  const [bg, cl, br] = colors[color] || colors.green;
+  toast.style.background   = bg;
+  toast.style.color        = cl;
+  toast.style.borderColor  = br;
+  toast.textContent        = msg;
+  toast.style.display      = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3500);
+}
+
+function filterStudents() {
+  const q    = document.getElementById('searchBox').value.toLowerCase();
+  const rows = document.querySelectorAll('#studentTable tbody tr');
+  rows.forEach(row => {
+    const match = row.dataset.name.includes(q) || row.dataset.roll.includes(q);
+    row.style.display = match ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

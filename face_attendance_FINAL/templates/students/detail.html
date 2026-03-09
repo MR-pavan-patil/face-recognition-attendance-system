@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }}{% endblock %}
+{% block breadcrumb %}Students / {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ student.name }}</h1>
+    <p class="page-subtitle">
+      <span class="code-badge">{{ student.roll_number }}</span>&nbsp;
+      {{ student.department }} · {{ student.year }}
+    </p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="{{ url_for('email_report.student_pdf', student_id=student.id) }}"
+       class="btn-icon-secondary" style="color:var(--red);border-color:rgba(255,92,92,.3)">
+      <i class="bi bi-file-earmark-pdf-fill me-2"></i>Download PDF
+    </a>
+    <a href="{{ url_for('capture.capture_page', student_id=student.id) }}" class="btn-icon-primary">
+      <i class="bi bi-camera-fill me-2"></i>Capture Photos
+    </a>
+    <a href="{{ url_for('students.list_students') }}" class="btn-icon-secondary">
+      <i class="bi bi-arrow-left me-2"></i>Back
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Profile Card -->
+  <div class="col-lg-4">
+    <div class="info-card animate-in" style="--delay:0.05s">
+      <div class="info-card-header">
+        <h5 class="info-card-title">
+          <i class="bi bi-person-fill me-2 text-accent"></i>Profile
+        </h5>
+        {% if student.dataset_ready %}
+        <span class="status-pill ready">
+          <i class="bi bi-check-circle-fill"></i>Dataset Ready
+        </span>
+        {% else %}
+        <span class="status-pill pending">
+          <i class="bi bi-hourglass-split"></i>Pending
+        </span>
+        {% endif %}
+      </div>
+      <div class="info-card-body">
+        <div class="big-avatar">{{ student.name[0].upper() }}</div>
+        <table class="detail-table mt-3">
+          <tr><td class="dt-label">Full Name</td><td>{{ student.name }}</td></tr>
+          <tr><td class="dt-label">Roll No</td><td>{{ student.roll_number }}</td></tr>
+          <tr><td class="dt-label">Email</td><td style="word-break:break-all">{{ student.email }}</td></tr>
+          <tr><td class="dt-label">Phone</td><td>{{ student.phone or '—' }}</td></tr>
+          <tr><td class="dt-label">Department</td><td>{{ student.department }}</td></tr>
+          <tr><td class="dt-label">Year</td><td>{{ student.year }}</td></tr>
+          <tr><td class="dt-label">Section</td><td>{{ student.section or '—' }}</td></tr>
+          <tr><td class="dt-label">Registered</td>
+            <td>{{ student.registered_at.strftime('%d %b %Y') if student.registered_at else '—' }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photos Card -->
+  <div class="col-lg-8">
+    <div class="info-card animate-in" style="--delay:0.15s">
+      <div class="info-card-header">
+        <h5 class="info-card-title">
+          <i class="bi bi-camera-fill me-2 text-accent"></i>Uploaded Photos
+        </h5>
+        <span class="info-card-tag">{{ student.images|length }} PHOTOS</span>
+      </div>
+      <div class="info-card-body">
+        {% if student.images %}
+        <div class="photo-gallery">
+          {% for img in student.images %}
+          <div class="gallery-thumb">
+            <!-- Use dedicated serve route — no path issues -->
+            <img src="{{ url_for('students.serve_photo', image_id=img.id) }}"
+                 alt="Photo {{ loop.index }}"
+                 loading="lazy"
+                 style="width:100%;height:100%;object-fit:cover;border-radius:10px"
+                 onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);border-radius:10px;color:var(--text-disabled);font-size:22px\'><i class=\'bi bi-image\'></i></div>'"/>
+            <span class="gallery-num">{{ loop.index }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px 0">
+          <i class="bi bi-camera-video-off"></i>
+          <h5>No photos yet</h5>
+          <p>Capture webcam photos to enable face recognition.</p>
+          <a href="{{ url_for('capture.capture_page', student_id=student.id) }}" class="btn-icon-primary">
+            <i class="bi bi-camera-fill me-2"></i>Capture Photos Now
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Attendance Summary -->
+    <div class="info-card animate-in mt-4" style="--delay:0.2s">
+      <div class="info-card-header">
+        <h5 class="info-card-title">
+          <i class="bi bi-bar-chart-fill me-2 text-accent"></i>Attendance Summary
+        </h5>
+        <a href="{{ url_for('reports.student_report', student_id=student.id) }}"
+           class="info-card-tag" style="text-decoration:none">
+          Full Report →
+        </a>
+      </div>
+      <div class="info-card-body" id="attSummary"
+           style="display:flex;gap:24px;flex-wrap:wrap;padding:20px 24px">
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;
+                      color:var(--green)" id="daysPresent">—</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Days Present</div>
+        </div>
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;
+                      color:var(--accent)" id="attPct">—</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Attendance %</div>
+        </div>
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;
+                      color:var(--text-secondary)" id="lastSeen">—</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Last Seen</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load attendance stats
+(async () => {
+  try {
+    const res  = await fetch('/reports/api/student/{{ student.id }}');
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('daysPresent').textContent = data.days_present;
+      document.getElementById('attPct').textContent      = data.percentage + '%';
+      document.getElementById('lastSeen').textContent    = data.last_seen || 'Never';
+    }
+  } catch(e) {}
+})();
+</script>
+{% endblock %}

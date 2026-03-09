@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% block title %}Live Recognition{% endblock %}
+{% block breadcrumb %}Live Recognition{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Live Face Recognition</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-camera-video me-1"></i>
+      Website se seedha attendance mark karo — camera.py ki zaroorat nahi!
+    </p>
+  </div>
+  <div style="display:flex;gap:10px">
+    <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary">
+      <i class="bi bi-calendar-check me-2"></i>View Attendance
+    </a>
+  </div>
+</div>
+
+{% if not has_encodings %}
+<!-- No encodings warning -->
+<div class="info-card animate-in" style="--delay:0s;border-color:rgba(255,179,71,.3)">
+  <div class="info-card-body" style="padding:28px">
+    <div style="display:flex;align-items:flex-start;gap:16px">
+      <i class="bi bi-exclamation-triangle-fill" style="font-size:28px;color:var(--amber);flex-shrink:0;margin-top:2px"></i>
+      <div>
+        <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">
+          Face Encodings Not Found!
+        </div>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px">
+          Pehle <code style="color:var(--accent)">python encode_faces.py</code> run karo CMD mein,
+          phir is page ko refresh karo.
+        </p>
+        <button onclick="reloadEncodings()" class="btn-icon-primary">
+          <i class="bi bi-arrow-clockwise me-2"></i>Reload Encodings
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Stats bar -->
+<div class="mini-stats animate-in mb-4" style="--delay:0.05s">
+  <div class="mini-stat">
+    <i class="bi bi-people-fill"></i>
+    <div><span class="ms-val" id="studentCount">{{ student_count }}</span><span class="ms-lbl">Students Loaded</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-calendar-check-fill" style="color:var(--green)"></i>
+    <div><span class="ms-val" id="markedToday">{{ marked_today }}</span><span class="ms-lbl">Marked Today</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-camera-video-fill" style="color:var(--accent)"></i>
+    <div><span class="ms-val" id="fpsDisplay">0</span><span class="ms-lbl">FPS</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-person-bounding-box" style="color:var(--amber)"></i>
+    <div><span class="ms-val" id="faceCount">0</span><span class="ms-lbl">Faces Detected</span></div>
+  </div>
+</div>
+
+<!-- Main layout -->
+<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:24px" class="recognition-layout">
+
+  <!-- Camera Feed -->
+  <div class="info-card animate-in" style="--delay:0.1s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <span id="camStatusDot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--text-disabled);margin-right:8px"></span>
+        <span id="camStatusText">Camera Offline</span>
+      </h5>
+      <div style="display:flex;gap:8px">
+        <button id="startBtn" onclick="startCamera()" class="btn-icon-primary" style="padding:7px 16px">
+          <i class="bi bi-camera-video-fill me-2"></i>Start
+        </button>
+        <button id="stopBtn" onclick="stopCamera()" class="btn-icon-secondary" style="padding:7px 16px;display:none">
+          <i class="bi bi-stop-fill me-2"></i>Stop
+        </button>
+      </div>
+    </div>
+
+    <!-- Video canvas area -->
+    <div style="position:relative;background:#000;border-radius:0 0 var(--radius-lg) var(--radius-lg);overflow:hidden;aspect-ratio:4/3">
+      <video id="videoEl" autoplay muted playsinline
+             style="width:100%;height:100%;object-fit:cover;display:none"></video>
+      <canvas id="outputCanvas"
+              style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+
+      <!-- Offline placeholder -->
+      <div id="offlinePlaceholder"
+           style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+                  justify-content:center;gap:12px;background:var(--bg-elevated)">
+        <i class="bi bi-camera-video-off" style="font-size:52px;color:var(--text-disabled)"></i>
+        <p style="color:var(--text-secondary);font-size:15px;font-weight:600;margin:0">Camera not started</p>
+        <p style="color:var(--text-muted);font-size:13px;margin:0">Click "Start" to begin recognition</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+
+    <!-- Controls -->
+    <div class="info-card animate-in" style="--delay:0.12s">
+      <div class="info-card-header">
+        <h5 class="info-card-title"><i class="bi bi-sliders me-2 text-accent"></i>Settings</h5>
+      </div>
+      <div class="info-card-body">
+        <div style="margin-bottom:16px">
+          <label class="field-label">Recognition Interval</label>
+          <select id="intervalSelect"
+                  style="width:100%;background:var(--bg-input);border:1px solid var(--border-color);
+                         border-radius:var(--radius-sm);color:var(--text-primary);padding:10px 14px;
+                         font-size:13px;outline:none;cursor:pointer">
+            <option value="800">Fast (0.8s)</option>
+            <option value="1500" selected>Normal (1.5s)</option>
+            <option value="3000">Slow (3s)</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px">
+          <label class="field-label">Confidence Threshold</label>
+          <select id="toleranceSelect"
+                  style="width:100%;background:var(--bg-input);border:1px solid var(--border-color);
+                         border-radius:var(--radius-sm);color:var(--text-primary);padding:10px 14px;
+                         font-size:13px;outline:none;cursor:pointer">
+            <option value="0.45">Strict (45%)</option>
+            <option value="0.50" selected>Normal (50%)</option>
+            <option value="0.55">Lenient (55%)</option>
+          </select>
+        </div>
+        <button onclick="reloadEncodings()" class="btn-icon-secondary" style="width:100%">
+          <i class="bi bi-arrow-clockwise me-2"></i>Reload Encodings
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Log -->
+    <div class="info-card animate-in" style="--delay:0.15s;flex:1">
+      <div class="info-card-header">
+        <h5 class="info-card-title"><i class="bi bi-activity me-2 text-accent"></i>Live Log</h5>
+        <button onclick="clearLog()"
+                style="background:none;border:1px solid var(--border-color);border-radius:6px;
+                       color:var(--text-muted);font-size:11px;padding:3px 10px;cursor:pointer">
+          Clear
+        </button>
+      </div>
+      <div id="liveLog"
+           style="max-height:300px;overflow-y:auto;padding:8px 0">
+        <div style="text-align:center;padding:24px;color:var(--text-disabled);font-size:13px">
+          <i class="bi bi-clock" style="display:block;font-size:24px;margin-bottom:8px"></i>
+          Waiting for camera...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification toast -->
+<div id="toastContainer"
+     style="position:fixed;bottom:30px;right:30px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── State ────────────────────────────────────────────────────
+let stream      = null;
+let isRunning   = false;
+let frameTimer  = null;
+let fpsCount    = 0;
+let fpsTimer    = null;
+let markedSet   = new Set();
+let markedToday = {{ marked_today }};
+
+const video   = document.getElementById('videoEl');
+const canvas  = document.getElementById('outputCanvas');
+const ctx     = canvas.getContext('2d');
+
+// ── Start camera ─────────────────────────────────────────────
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    video.srcObject  = stream;
+    video.style.display = 'block';
+    document.getElementById('offlinePlaceholder').style.display = 'none';
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('stopBtn').style.display  = 'inline-flex';
+
+    setCamStatus(true);
+    isRunning = true;
+    startProcessing();
+    startFpsCounter();
+    addLog('Camera started', 'info');
+  } catch (e) {
+    addLog('Camera error: ' + e.message, 'error');
+    showToast('Camera access denied! Allow camera in browser.', 'error');
+  }
+}
+
+// ── Stop camera ──────────────────────────────────────────────
+function stopCamera() {
+  isRunning = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (frameTimer) { clearTimeout(frameTimer); frameTimer = null; }
+  if (fpsTimer)   { clearInterval(fpsTimer);  fpsTimer   = null; }
+  video.style.display = 'block';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('startBtn').style.display = 'inline-flex';
+  document.getElementById('stopBtn').style.display  = 'none';
+  setCamStatus(false);
+  document.getElementById('fpsDisplay').textContent = '0';
+  document.getElementById('faceCount').textContent  = '0';
+  addLog('Camera stopped', 'info');
+}
+
+// ── Processing loop ──────────────────────────────────────────
+function startProcessing() {
+  if (!isRunning) return;
+  captureAndRecognize();
+}
+
+async function captureAndRecognize() {
+  if (!isRunning) return;
+
+  const interval = parseInt(document.getElementById('intervalSelect').value);
+
+  try {
+    // Draw video to temp canvas → get base64
+    const tmp = document.createElement('canvas');
+    tmp.width  = video.videoWidth  || 640;
+    tmp.height = video.videoHeight || 480;
+    tmp.getContext('2d').drawImage(video, 0, 0);
+    const frame = tmp.toDataURL('image/jpeg', 0.7);
+
+    const tolerance = parseFloat(document.getElementById('toleranceSelect').value);
+
+    const res = await fetch('/recognition/api/recognize', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ frame, tolerance }),
+    });
+
+    if (!res.ok) throw new Error('Server error');
+
+    const data = await res.json();
+    fpsCount++;
+
+    // Update face count
+    document.getElementById('faceCount').textContent = data.faces ? data.faces.length : 0;
+
+    // Draw on canvas
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (data.faces) {
+      data.faces.forEach(face => drawFaceBox(face));
+
+      // Process attendance results
+      data.faces.forEach(face => {
+        if (face.att_status === 'marked' && face.student) {
+          const roll = face.student.roll_number;
+          if (!markedSet.has(roll)) {
+            markedSet.add(roll);
+            markedToday++;
+            document.getElementById('markedToday').textContent = markedToday;
+            addLog(`✓ Marked: ${face.student.name} (${roll})`, 'success');
+            showToast(`✓ ${face.student.name} — Attendance Marked!`, 'success');
+          }
+        } else if (face.att_status === 'already_marked' && face.student) {
+          const roll = face.student.roll_number;
+          if (!markedSet.has(roll + '_notified')) {
+            markedSet.add(roll + '_notified');
+            addLog(`↩ Already marked: ${face.student.name}`, 'warn');
+          }
+        }
+      });
+    }
+
+    if (data.error) addLog('⚠ ' + data.error, 'error');
+
+  } catch (e) {
+    if (isRunning) addLog('Recognition error: ' + e.message, 'error');
+  }
+
+  if (isRunning) frameTimer = setTimeout(captureAndRecognize, interval);
+}
+
+// ── Draw face boxes on canvas ─────────────────────────────────
+function drawFaceBox(face) {
+  const { top, right, bottom, left } = face.box;
+  const isKnown = face.name !== 'Unknown';
+  const color   = isKnown ? '#2dd471' : '#5c64ff';
+  const cLen    = Math.min(24, (bottom - top) / 4);
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 2.5;
+
+  // Corner brackets
+  [
+    [[left, top],    [left+cLen, top],    [left, top+cLen]],
+    [[right, top],   [right-cLen, top],   [right, top+cLen]],
+    [[left, bottom], [left+cLen, bottom], [left, bottom-cLen]],
+    [[right,bottom], [right-cLen,bottom], [right,bottom-cLen]],
+  ].forEach(([o, h, v]) => {
+    ctx.beginPath(); ctx.moveTo(...o); ctx.lineTo(...h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(...o); ctx.lineTo(...v); ctx.stroke();
+  });
+
+  // Label background
+  const label1 = face.name;
+  const label2 = isKnown ? `${face.confidence.toFixed(0)}% match` : 'Not in database';
+  let label3 = '';
+  if (face.att_status === 'marked')        label3 = '✓ Attendance Marked';
+  else if (face.att_status === 'already_marked') label3 = '↩ Already Marked';
+
+  ctx.font = 'bold 13px Inter, sans-serif';
+  const bw = Math.max(ctx.measureText(label1).width, ctx.measureText(label2).width) + 20;
+  const bh = label3 ? 58 : 40;
+  const bx = left;
+  const by = bottom + 6 + bh > canvas.height ? top - bh - 6 : bottom + 6;
+
+  ctx.fillStyle = 'rgba(8,12,20,0.88)';
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, 6);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.fillRect(bx, by, 3, bh);
+  ctx.strokeStyle = color; ctx.lineWidth = 1;
+  ctx.strokeRect(bx, by, bw, bh);
+
+  ctx.fillStyle = '#edf2ff';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.fillText(label1, bx + 12, by + 16);
+  ctx.fillStyle = '#94a3c0';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillText(label2, bx + 12, by + 30);
+  if (label3) {
+    ctx.fillStyle = face.att_status === 'marked' ? '#2dd471' : '#ffb347';
+    ctx.fillText(label3, bx + 12, by + 46);
+  }
+}
+
+// ── FPS counter ───────────────────────────────────────────────
+function startFpsCounter() {
+  fpsTimer = setInterval(() => {
+    document.getElementById('fpsDisplay').textContent = fpsCount;
+    fpsCount = 0;
+  }, 1000);
+}
+
+// ── Reload encodings ──────────────────────────────────────────
+async function reloadEncodings() {
+  addLog('Reloading encodings...', 'info');
+  try {
+    const res  = await fetch('/recognition/api/reload', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('studentCount').textContent = data.students;
+      addLog(`✓ Loaded: ${data.students} students, ${data.encodings} encodings`, 'success');
+      showToast(`Encodings reloaded — ${data.students} students`, 'success');
+    } else {
+      addLog('✗ encodings.pickle not found. Run encode_faces.py first.', 'error');
+    }
+  } catch (e) {
+    addLog('Reload failed: ' + e.message, 'error');
+  }
+}
+
+// ── Log ───────────────────────────────────────────────────────
+function addLog(msg, type = 'info') {
+  const log = document.getElementById('liveLog');
+  // Remove placeholder
+  if (log.querySelector('.bi-clock')) log.innerHTML = '';
+
+  const colors = { success:'var(--green)', error:'var(--red)', warn:'var(--amber)', info:'var(--accent)' };
+  const time   = new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border-subtle);font-size:12.5px`;
+  div.innerHTML = `
+    <span style="color:var(--text-disabled);flex-shrink:0;font-size:11px;margin-top:1px">${time}</span>
+    <span style="color:${colors[type] || colors.info}">${msg}</span>`;
+  log.prepend(div);
+
+  // Keep last 50 entries
+  while (log.children.length > 50) log.removeChild(log.lastChild);
+}
+
+function clearLog() {
+  document.getElementById('liveLog').innerHTML =
+    '<div style="text-align:center;padding:24px;color:var(--text-disabled);font-size:13px">Log cleared</div>';
+}
+
+// ── Toast notifications ───────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const colors = { success:'var(--green-soft)',error:'var(--red-soft)',info:'var(--accent-soft)' };
+  const borders = { success:'rgba(45,212,113,.3)',error:'rgba(255,92,92,.3)',info:'rgba(82,148,255,.3)' };
+  const textC  = { success:'var(--green)',error:'var(--red)',info:'var(--accent)' };
+
+  const t = document.createElement('div');
+  t.style.cssText = `
+    background:${colors[type]};border:1px solid ${borders[type]};
+    border-radius:var(--radius-sm);padding:12px 18px;
+    color:${textC[type]};font-size:13.5px;font-weight:600;
+    max-width:320px;box-shadow:var(--shadow-md);
+    animation:fadeSlideUp .3s ease;`;
+  t.textContent = msg;
+  document.getElementById('toastContainer').prepend(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ── Camera status dot ─────────────────────────────────────────
+function setCamStatus(online) {
+  const dot  = document.getElementById('camStatusDot');
+  const text = document.getElementById('camStatusText');
+  dot.style.background  = online ? 'var(--green)' : 'var(--text-disabled)';
+  dot.style.boxShadow   = online ? '0 0 8px var(--green)' : 'none';
+  dot.style.animation   = online ? 'pulse-dot 2s infinite' : 'none';
+  text.textContent      = online ? 'Camera Live' : 'Camera Offline';
+  text.style.color      = online ? 'var(--green)' : 'var(--text-muted)';
+}
+</script>
+{% endblock %}

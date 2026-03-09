@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      Good {{ 'Morning' if now.hour < 12 else ('Afternoon' if now.hour < 17 else 'Evening') }}, Admin 👋
+    </h1>
+    <p class="page-subtitle">
+      <i class="bi bi-calendar3 me-1"></i>{{ stats.day_name }}, {{ stats.today_date }}
+    </p>
+  </div>
+  <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-primary">
+    <i class="bi bi-calendar-check me-2"></i>View Attendance
+  </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid animate-in" style="--delay:0.05s">
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap total"><i class="bi bi-people-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Total Students</span>
+        <span class="stat-value">{{ stats.total_students }}</span>
+        <span class="stat-change neutral"><i class="bi bi-building me-1"></i>Enrolled</span>
+      </div>
+    </div><div class="stat-glow total-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap present"><i class="bi bi-person-check-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Present Today</span>
+        <span class="stat-value">{{ stats.present_today }}</span>
+        <span class="stat-change positive"><i class="bi bi-arrow-up me-1"></i>{{ stats.attendance_percentage }}%</span>
+      </div>
+    </div><div class="stat-glow present-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap absent"><i class="bi bi-person-x-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Absent Today</span>
+        <span class="stat-value">{{ stats.absent_today }}</span>
+        <span class="stat-change negative"><i class="bi bi-arrow-down me-1"></i>Not marked</span>
+      </div>
+    </div><div class="stat-glow absent-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap percent"><i class="bi bi-camera-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Dataset Ready</span>
+        <span class="stat-value">{{ stats.dataset_ready }}</span>
+        <span class="stat-change neutral"><i class="bi bi-check-circle me-1"></i>Can recognize</span>
+      </div>
+    </div><div class="stat-glow percent-glow"></div>
+  </div>
+</div>
+
+<!-- Chart + Quick Actions -->
+<div class="responsive-grid-2 animate-in mt-4" style="--delay:0.15s">
+
+  <!-- Weekly Chart -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-bar-chart-line me-2 text-accent"></i>This Week</h5>
+      <a href="{{ url_for('reports.summary', period='week') }}" class="info-card-tag" style="text-decoration:none">Full Report →</a>
+    </div>
+    <div class="info-card-body" style="padding:20px 24px">
+      <canvas id="weeklyChart" height="130"></canvas>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-lightning-fill me-2 text-accent"></i>Quick Actions</h5>
+    </div>
+    <div class="info-card-body">
+      <a href="{{ url_for('students.register') }}" class="quick-action-btn">
+        <i class="bi bi-person-plus-fill" style="color:var(--accent)"></i>Register New Student
+      </a>
+      <a href="{{ url_for('students.list_students') }}" class="quick-action-btn">
+        <i class="bi bi-people-fill" style="color:var(--green)"></i>Manage Students
+      </a>
+      <a href="{{ url_for('recognition.index') }}" class="quick-action-btn">
+        <i class="bi bi-camera-video-fill" style="color:var(--purple)"></i>Live Recognition
+      </a>
+      <a href="{{ url_for('attendance.today_attendance') }}" class="quick-action-btn">
+        <i class="bi bi-calendar-check-fill" style="color:var(--amber)"></i>Today's Attendance
+      </a>
+      <a href="{{ url_for('reports.export_csv', period='month') }}" class="quick-action-btn">
+        <i class="bi bi-download" style="color:var(--green)"></i>Download CSV Report
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Progress + Recent -->
+<div class="responsive-grid-2 animate-in mt-4" style="--delay:0.2s">
+
+  <!-- Today's Progress -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-pie-chart-fill me-2 text-accent"></i>Today's Summary</h5>
+      <span class="info-card-tag">{{ stats.today_date }}</span>
+    </div>
+    <div class="info-card-body">
+      <div style="margin-bottom:20px">
+        <div class="progress-label">
+          <span>Present</span>
+          <strong style="color:var(--green)">{{ stats.present_today }} students</strong>
+        </div>
+        <div class="custom-progress">
+          <div class="progress-bar present-bar" style="width:{{ stats.attendance_percentage }}%"></div>
+        </div>
+        <span class="progress-percent">{{ stats.attendance_percentage }}%</span>
+      </div>
+      <div>
+        <div class="progress-label">
+          <span>Absent</span>
+          <strong style="color:var(--red)">{{ stats.absent_today }} students</strong>
+        </div>
+        <div class="custom-progress">
+          <div class="progress-bar absent-bar" style="width:{{ (100 - stats.attendance_percentage)|round(1) }}%"></div>
+        </div>
+        <span class="progress-percent">{{ (100 - stats.attendance_percentage)|round(1) }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recently Marked -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-clock-history me-2 text-accent"></i>Recently Marked</h5>
+      <a href="{{ url_for('attendance.today_attendance') }}" class="info-card-tag" style="text-decoration:none">View All →</a>
+    </div>
+    <div class="info-card-body" style="padding:0">
+      {% if recent %}
+        {% for att, stu in recent %}
+        <div style="display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--border-subtle)">
+          <div class="student-avatar" style="width:36px;height:36px;font-size:14px;flex-shrink:0">{{ stu.name[0].upper() }}</div>
+          <div style="flex:1;min-width:0">
+            <div class="student-name" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ stu.name }}</div>
+            <div class="student-email">{{ stu.roll_number }}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="color:var(--green);font-weight:700;font-size:12.5px">
+              {{ att.time_in.strftime('%I:%M %p') if att.time_in else '--' }}
+            </div>
+            <div style="font-size:10px;color:var(--text-muted)">
+              {% if att.marked_by == 'FaceRecognition' or att.marked_by == 'WebRecognition' %}
+              <i class="bi bi-camera-fill" style="color:var(--accent)"></i> Auto
+              {% else %}<i class="bi bi-person"></i> Manual{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div style="text-align:center;padding:36px 20px;color:var(--text-muted)">
+        <i class="bi bi-camera-video" style="font-size:28px;display:block;margin-bottom:10px;color:var(--text-disabled)"></i>
+        <p style="font-size:13px;margin:0">No attendance today.<br>
+        <a href="{{ url_for('recognition.index') }}" style="color:var(--accent)">Start Live Recognition →</a></p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+const weeklyData = {{ weekly | tojson }};
+const ctx = document.getElementById('weeklyChart');
+if (ctx && weeklyData.length > 0) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: weeklyData.map(d => d.day),
+      datasets: [
+        { label: 'Present', data: weeklyData.map(d => d.present),
+          backgroundColor: 'rgba(45,212,113,0.75)', borderRadius: 5 },
+        { label: 'Absent',  data: weeklyData.map(d => d.absent),
+          backgroundColor: 'rgba(255,92,92,0.4)',   borderRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color:'#94a3c0', font:{ size:11 } } } },
+      scales: {
+        x: { ticks:{color:'#4e6080'}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { ticks:{color:'#4e6080'}, grid:{color:'rgba(255,255,255,0.04)'}, beginAtZero:true }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

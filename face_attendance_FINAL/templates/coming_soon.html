@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ page }}{% endblock %}
+{% block breadcrumb %}{{ page }}{% endblock %}
+{% block content %}
+<div class="coming-soon-wrapper">
+  <div class="coming-soon-card animate-in">
+    <div class="coming-soon-icon"><i class="bi bi-hammer"></i></div>
+    <h2 class="coming-soon-title">{{ page }}</h2>
+    <p class="coming-soon-text">
+      This module will be built in an upcoming session.<br/>
+      Follow the 10-Day Roadmap on the dashboard.
+    </p>
+    <a href="{{ url_for('dashboard') }}" class="btn-icon-primary">
+      <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

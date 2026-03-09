@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}Attendance History{% endblock %}
+{% block breadcrumb %}Attendance History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Attendance History</h1>
+    <p class="page-subtitle"><i class="bi bi-clock-history me-1"></i>View & edit any date</p>
+  </div>
+  <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary">
+    <i class="bi bi-calendar-check me-2"></i>Today
+  </a>
+</div>
+
+<!-- Date Picker -->
+<div class="info-card animate-in mb-4" style="--delay:0s">
+  <div class="info-card-body" style="padding:16px 24px">
+    <form method="GET" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <label style="color:var(--text-secondary);font-size:13.5px;font-weight:600">Select Date:</label>
+      <input type="date" name="date"
+             value="{{ selected_date.strftime('%Y-%m-%d') }}"
+             max="{{ selected_date.strftime('%Y-%m-%d') }}"
+             style="background:var(--bg-input);border:1px solid var(--border-color);
+                    border-radius:var(--radius-sm);color:var(--text-primary);
+                    padding:9px 14px;font-size:13.5px;outline:none;cursor:pointer"/>
+      <button type="submit" class="btn-icon-primary" style="padding:9px 20px">
+        <i class="bi bi-search me-2"></i>View
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="mini-stats animate-in mb-4" style="--delay:0.05s">
+  <div class="mini-stat">
+    <i class="bi bi-people-fill" style="color:var(--accent)"></i>
+    <div><span class="ms-val">{{ total }}</span><span class="ms-lbl">Total</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-person-check-fill" style="color:var(--green)"></i>
+    <div><span class="ms-val" id="presentVal">{{ present }}</span><span class="ms-lbl">Present</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-person-x-fill" style="color:var(--red)"></i>
+    <div><span class="ms-val">{{ absent }}</span><span class="ms-lbl">Absent</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-percent" style="color:var(--amber)"></i>
+    <div><span class="ms-val">{{ percentage }}<span style="font-size:14px">%</span></span><span class="ms-lbl">Attendance</span></div>
+  </div>
+</div>
+
+<!-- Records Table -->
+<div class="info-card animate-in" style="--delay:0.1s">
+  <div class="info-card-header">
+    <h5 class="info-card-title">
+      <i class="bi bi-calendar3 me-2 text-accent"></i>
+      {{ selected_date.strftime('%A, %d %B %Y') }}
+    </h5>
+    <!-- Add Attendance Button -->
+    <button onclick="showAddModal()" class="btn-icon-primary" style="padding:7px 16px">
+      <i class="bi bi-plus-lg me-2"></i>Add Attendance
+    </button>
+  </div>
+
+  {% if records %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Student</th><th>Roll No</th><th>Dept</th><th>Time In</th><th>Marked By</th><th>Action</th></tr>
+      </thead>
+      <tbody id="historyTable">
+        {% for att, stu in records %}
+        <tr id="hrow-{{ att.id }}">
+          <td class="row-num">{{ loop.index }}</td>
+          <td>
+            <div class="student-cell">
+              <div class="student-avatar">{{ stu.name[0].upper() }}</div>
+              <div>
+                <div class="student-name">{{ stu.name }}</div>
+                <div class="student-email">{{ stu.year }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="code-badge">{{ stu.roll_number }}</span></td>
+          <td style="color:var(--text-secondary);font-size:13px">{{ stu.department }}</td>
+          <td style="color:var(--green);font-weight:700">
+            {{ att.time_in.strftime('%I:%M %p') if att.time_in else '--' }}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted)">
+            {% if att.marked_by in ['WebRecognition','FaceRecognition'] %}
+            <i class="bi bi-camera-fill" style="color:var(--accent)"></i> Auto
+            {% else %}
+            <i class="bi bi-hand-index" style="color:var(--amber)"></i> Manual
+            {% endif %}
+          </td>
+          <td>
+            <button onclick="undoRecord({{ att.id }}, '{{ stu.name }}')"
+                    class="action-btn delete" title="Remove"
+                    style="background:var(--red-soft);color:var(--red);border-color:rgba(255,92,92,.3)">
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-calendar-x"></i>
+    <h5>No attendance on {{ selected_date.strftime('%d %B %Y') }}</h5>
+    <p>Click "Add Attendance" to manually add records for this date.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Attendance Modal -->
+<div id="addModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+     z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--bg-card);border:1px solid var(--border-color);
+              border-radius:var(--radius-xl);padding:32px;width:90%;max-width:440px;
+              box-shadow:var(--shadow-xl)">
+    <h5 style="font-family:var(--font-display);font-size:17px;font-weight:800;
+               color:var(--text-primary);margin-bottom:20px">
+      <i class="bi bi-person-plus me-2 text-accent"></i>Add Attendance
+      <span style="font-size:13px;color:var(--text-muted);font-weight:500;display:block;margin-top:4px">
+        Date: {{ selected_date.strftime('%d %B %Y') }}
+      </span>
+    </h5>
+
+    <div class="field-group mb-3">
+      <label class="field-label">Search Student</label>
+      <div class="input-wrap">
+        <i class="bi bi-search input-icon"></i>
+        <input type="text" id="studentSearch" class="form-field"
+               placeholder="Type name or roll number..."
+               oninput="filterStudents(this.value)"
+               style="padding-left:40px"/>
+      </div>
+    </div>
+
+    <div id="studentList" style="max-height:220px;overflow-y:auto;
+         border:1px solid var(--border-color);border-radius:var(--radius-md);
+         margin-bottom:20px"></div>
+
+    <div style="display:flex;gap:12px">
+      <button onclick="closeAddModal()" class="btn-icon-secondary" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SELECTED_DATE = "{{ selected_date.strftime('%Y-%m-%d') }}";
+let allStudents = [];
+
+// ── Load students for modal ───────────────────────────────────
+async function showAddModal() {
+  document.getElementById('addModal').style.display = 'flex';
+  if (allStudents.length === 0) {
+    const res = await fetch('/students/api/all');
+    allStudents = await res.json();
+  }
+  renderStudentList(allStudents);
+  document.getElementById('studentSearch').focus();
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').style.display = 'none';
+  document.getElementById('studentSearch').value = '';
+}
+
+function filterStudents(q) {
+  const filtered = q.length < 2
+    ? allStudents
+    : allStudents.filter(s =>
+        s.name.toLowerCase().includes(q.toLowerCase()) ||
+        s.roll_number.toLowerCase().includes(q.toLowerCase())
+      );
+  renderStudentList(filtered);
+}
+
+function renderStudentList(students) {
+  const el = document.getElementById('studentList');
+  if (!students.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No students found</div>';
+    return;
+  }
+  el.innerHTML = students.map(s => `
+    <div onclick="markForDate(${s.id}, '${s.name}')"
+         style="display:flex;align-items:center;gap:12px;padding:11px 16px;
+                cursor:pointer;border-bottom:1px solid var(--border-subtle);
+                transition:background .15s"
+         onmouseover="this.style.background='var(--bg-hover)'"
+         onmouseout="this.style.background='transparent'">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);
+                  display:flex;align-items:center;justify-content:center;
+                  font-family:var(--font-display);font-weight:700;color:var(--accent);font-size:13px">
+        ${s.name[0].toUpperCase()}
+      </div>
+      <div>
+        <div style="color:var(--text-primary);font-size:13.5px;font-weight:600">${s.name}</div>
+        <div style="color:var(--text-muted);font-size:11.5px">${s.roll_number} · ${s.department}</div>
+      </div>
+      <i class="bi bi-plus-circle" style="margin-left:auto;color:var(--accent);font-size:18px"></i>
+    </div>`).join('');
+}
+
+async function markForDate(studentId, name) {
+  try {
+    const res  = await fetch('/attendance/api/mark', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ student_id: studentId, date: SELECTED_DATE }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✓ ${name} — Attendance added`, 'success');
+      closeAddModal();
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showToast(data.message || data.error, 'warn');
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── Undo record ───────────────────────────────────────────────
+async function undoRecord(attId, name) {
+  if (!confirm(`Remove attendance for "${name}" on this date?`)) return;
+  const res  = await fetch('/attendance/api/undo', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify({ attendance_id: attId }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    const row = document.getElementById('hrow-' + attId);
+    if (row) { row.style.opacity='0'; setTimeout(()=>row.remove(),400); }
+    showToast(`↩ ${name} removed`, 'warn');
+  } else {
+    showToast('Error: ' + data.error, 'error');
+  }
+}
+
+function showToast(msg, type='info') {
+  const c = {success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
+             warn:['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)'],
+             error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)'],
+             info:['var(--accent-soft)','rgba(82,148,255,.3)','var(--accent)']};
+  const [bg,bd,tc] = c[type]||c.info;
+  const t = document.createElement('div');
+  t.style.cssText=`background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;max-width:320px;box-shadow:var(--shadow-md)`;
+  t.textContent=msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+// Close modal on outside click
+document.getElementById('addModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddModal();
+});
+</script>
+{% endblock %}

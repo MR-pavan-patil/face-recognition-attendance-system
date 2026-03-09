@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block breadcrumb %}Students{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Students</h1>
+    <p class="page-subtitle"><i class="bi bi-people me-1"></i>{{ students.total }} registered students</p>
+  </div>
+  <a href="{{ url_for('students.register') }}" class="btn-icon-primary">
+    <i class="bi bi-person-plus-fill me-2"></i>Register Student
+  </a>
+</div>
+
+<!-- Filter bar -->
+<div class="info-card animate-in mb-4" style="--delay:0s">
+  <div class="info-card-body" style="padding:14px 24px">
+    <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <div class="input-wrap" style="flex:1;min-width:220px">
+        <i class="bi bi-search input-icon"></i>
+        <input type="text" class="form-field" name="search"
+               placeholder="Search name, roll, email..."
+               value="{{ search }}" style="padding-left:40px;height:38px;font-size:13px"/>
+      </div>
+      <select name="dept" onchange="this.form.submit()"
+              style="background:var(--bg-input);border:1px solid var(--border-color);
+                     border-radius:var(--radius-sm);color:var(--text-primary);
+                     padding:8px 14px;font-size:13px;outline:none;cursor:pointer">
+        <option value="all" {% if selected_dept=='all' %}selected{% endif %}>All Departments</option>
+        {% for d in all_depts %}
+        <option value="{{ d }}" {% if selected_dept==d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="dept" value="{{ selected_dept }}">
+      <button type="submit" class="btn-icon-primary" style="padding:8px 18px">
+        <i class="bi bi-search me-1"></i>Search
+      </button>
+      {% if search or selected_dept != 'all' %}
+      <a href="{{ url_for('students.list_students') }}" class="btn-icon-secondary" style="padding:8px 14px">
+        <i class="bi bi-x"></i>
+      </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="info-card animate-in" style="--delay:0.1s">
+  <div class="info-card-header">
+    <h5 class="info-card-title">
+      <i class="bi bi-people-fill me-2 text-accent"></i>All Students
+    </h5>
+    <span class="info-card-tag">{{ students.total }} total</span>
+  </div>
+
+  {% if students.items %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Student</th>
+          <th>Roll Number</th>
+          <th>Department</th>
+          <th>Year</th>
+          <th>Dataset</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students.items %}
+        <tr id="row-{{ student.id }}">
+          <td class="row-num">{{ loop.index + ((students.page-1)*10) }}</td>
+          <td>
+            <div class="student-cell">
+              <div class="student-avatar">{{ student.name[0].upper() }}</div>
+              <div>
+                <div class="student-name">{{ student.name }}</div>
+                <div class="student-email">{{ student.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="code-badge">{{ student.roll_number }}</span></td>
+          <td>{{ student.department }}</td>
+          <td><span class="year-tag">{{ student.year }}</span></td>
+          <td>
+            {% if student.dataset_ready %}
+            <span class="status-pill ready"><i class="bi bi-check-circle-fill"></i>Ready</span>
+            {% else %}
+            <span class="status-pill pending"><i class="bi bi-clock"></i>Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="action-btns">
+              <!-- Mark Present Button -->
+              <button onclick="markPresent({{ student.id }}, '{{ student.name }}')"
+                      class="action-btn mark" id="mark-btn-{{ student.id }}"
+                      title="Mark Present Today">
+                <i class="bi bi-calendar-check-fill"></i>
+              </button>
+              <!-- Capture Photos -->
+              <a href="{{ url_for('capture.capture_page', student_id=student.id) }}"
+                 class="action-btn capture" title="Capture Photos">
+                <i class="bi bi-camera-fill"></i>
+              </a>
+              <!-- View Profile -->
+              <a href="{{ url_for('students.view_student', student_id=student.id) }}"
+                 class="action-btn view" title="View Profile">
+                <i class="bi bi-eye-fill"></i>
+              </a>
+              <!-- Delete -->
+              <button onclick="confirmDelete({{ student.id }}, '{{ student.name }}')"
+                      class="action-btn delete" title="Remove Student">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if students.pages > 1 %}
+  <div class="table-pagination">
+    <span class="page-info">
+      Showing {{ ((students.page-1)*10)+1 }}–{{ [students.page*10, students.total]|min }}
+      of {{ students.total }}
+    </span>
+    <div class="page-btns">
+      {% if students.has_prev %}
+      <a href="{{ url_for('students.list_students', page=students.prev_num, search=search, dept=selected_dept) }}" class="page-btn">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      {% endif %}
+      {% for p in students.iter_pages(left_edge=2, right_edge=2, left_current=1, right_current=2) %}
+        {% if p %}
+        <a href="{{ url_for('students.list_students', page=p, search=search, dept=selected_dept) }}"
+           class="page-btn {% if p == students.page %}active{% endif %}">{{ p }}</a>
+        {% else %}
+        <span class="page-ellipsis">…</span>
+        {% endif %}
+      {% endfor %}
+      {% if students.has_next %}
+      <a href="{{ url_for('students.list_students', page=students.next_num, search=search, dept=selected_dept) }}" class="page-btn">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-people"></i>
+    <h5>No students found</h5>
+    <p>{% if search %}No results for "{{ search }}"{% else %}Register your first student to get started.{% endif %}</p>
+    <a href="{{ url_for('students.register') }}" class="btn-icon-primary">
+      <i class="bi bi-person-plus-fill me-2"></i>Register Student
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Delete confirm modal -->
+<div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;
+     display:none;align-items:center;justify-content:center">
+  <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-xl);
+              padding:36px;max-width:400px;width:90%;box-shadow:var(--shadow-xl)">
+    <h5 style="font-family:var(--font-display);color:var(--text-primary);margin-bottom:12px">Remove Student?</h5>
+    <p style="color:var(--text-secondary);font-size:14px" id="deleteModalMsg"></p>
+    <div style="display:flex;gap:12px;margin-top:24px">
+      <button onclick="closeModal()" class="btn-icon-secondary" style="flex:1">Cancel</button>
+      <form id="deleteForm" method="POST" style="flex:1">
+        <button type="submit" style="width:100%;padding:10px;background:var(--red);
+          border:none;border-radius:var(--radius-md);color:#fff;font-weight:700;cursor:pointer">
+          Remove
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Manual Attendance ─────────────────────────────────────────
+async function markPresent(studentId, name) {
+  const btn = document.getElementById('mark-btn-' + studentId);
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+
+  try {
+    const res  = await fetch('/attendance/api/mark', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ student_id: studentId }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      btn.innerHTML  = '<i class="bi bi-check-lg"></i>';
+      btn.style.background = 'var(--green)';
+      btn.style.color      = '#fff';
+      showToast(`✓ ${name} — Attendance Marked at ${data.time}`, 'success');
+    } else if (data.status === 'already_marked') {
+      btn.innerHTML  = '<i class="bi bi-check-circle-fill"></i>';
+      btn.style.background = 'var(--amber-soft)';
+      btn.style.color      = 'var(--amber)';
+      showToast(`↩ ${name} — Already marked today`, 'warn');
+    } else {
+      btn.innerHTML = '<i class="bi bi-calendar-check-fill"></i>';
+      btn.disabled  = false;
+      showToast(`Error: ${data.error}`, 'error');
+    }
+  } catch (e) {
+    btn.innerHTML = '<i class="bi bi-calendar-check-fill"></i>';
+    btn.disabled  = false;
+    showToast('Network error. Try again.', 'error');
+  }
+}
+
+// ── Delete Modal ──────────────────────────────────────────────
+function confirmDelete(id, name) {
+  document.getElementById('deleteModalMsg').textContent =
+    `Are you sure you want to remove "${name}"? This cannot be undone.`;
+  document.getElementById('deleteForm').action = `/students/${id}/delete`;
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('deleteModal').style.display = 'none';
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const bg = { success:'var(--green-soft)', warn:'var(--amber-soft)',
+               error:'var(--red-soft)', info:'var(--accent-soft)' };
+  const bd = { success:'rgba(45,212,113,.3)', warn:'rgba(255,179,71,.3)',
+               error:'rgba(255,92,92,.3)',   info:'rgba(82,148,255,.3)' };
+  const tc = { success:'var(--green)', warn:'var(--amber)',
+               error:'var(--red)',     info:'var(--accent)' };
+
+  const t = document.createElement('div');
+  t.style.cssText = `background:${bg[type]};border:1px solid ${bd[type]};
+    border-radius:var(--radius-sm);padding:12px 18px;color:${tc[type]};
+    font-size:13.5px;font-weight:600;max-width:320px;box-shadow:var(--shadow-md)`;
+  t.textContent = msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(() => t.remove(), 4000);
+}
+</script>
+{% endblock %}

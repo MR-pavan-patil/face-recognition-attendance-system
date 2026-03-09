@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}Email & Alerts{% endblock %}
+{% block breadcrumb %}Reports / Email & Alerts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Email Reports & Alerts</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-envelope-fill me-1" style="color:var(--accent)"></i>
+      Attendance report email pe bhejo + low attendance students dekho
+    </p>
+  </div>
+  <a href="{{ url_for('reports.summary') }}" class="btn-icon-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Back to Reports
+  </a>
+</div>
+
+<!-- Low Attendance Alert Banner -->
+<div class="info-card animate-in mb-4" style="--delay:0s;border-color:rgba(255,92,92,.3)" id="alertBanner">
+  <div class="info-card-header" style="background:rgba(255,92,92,.05)">
+    <h5 class="info-card-title" style="color:var(--red)">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      Low Attendance Alert
+      <span id="lowCount" style="background:var(--red);color:#fff;border-radius:20px;
+        padding:2px 10px;font-size:12px;margin-left:8px">Loading...</span>
+    </h5>
+    <button onclick="loadLowAttendance()" class="btn-icon-secondary" style="padding:6px 14px">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </div>
+  <div id="lowTable" style="max-height:300px;overflow-y:auto">
+    <div style="text-align:center;padding:30px;color:var(--text-muted)">
+      <i class="bi bi-hourglass-split" style="font-size:28px;display:block;margin-bottom:10px"></i>
+      Loading...
+    </div>
+  </div>
+</div>
+
+<!-- Email Section -->
+<div class="responsive-grid-2 animate-in" style="--delay:0.1s">
+
+  <!-- Send Email Card -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-send-fill me-2 text-accent"></i>Send Email Report
+      </h5>
+    </div>
+    <div class="info-card-body">
+      <!-- Email config check -->
+      <div style="background:var(--amber-soft);border:1px solid rgba(255,179,71,.3);
+           border-radius:var(--radius-md);padding:14px 18px;margin-bottom:20px;font-size:13px">
+        <i class="bi bi-info-circle-fill me-2" style="color:var(--amber)"></i>
+        <strong style="color:var(--amber)">Setup required:</strong>
+        <span style="color:var(--text-secondary)">
+          config.py mein MAIL_USERNAME + MAIL_PASSWORD set karo (Gmail App Password)
+        </span>
+      </div>
+
+      <div class="field-group mb-3">
+        <label class="field-label">Send To (Email)</label>
+        <div class="input-wrap">
+          <i class="bi bi-envelope input-icon"></i>
+          <input type="email" id="toEmail" class="form-field"
+                 placeholder="teacher@college.edu"
+                 style="padding-left:40px"/>
+        </div>
+      </div>
+
+      <div class="field-group mb-4">
+        <label class="field-label">Report Type</label>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                 background:var(--bg-elevated);border:1px solid var(--border-color);
+                 border-radius:var(--radius-md);cursor:pointer;transition:all .2s"
+                 onmouseover="this.style.borderColor='var(--border-accent)'"
+                 onmouseout="this.style.borderColor='var(--border-color)'">
+            <input type="radio" name="reportType" value="daily" checked
+                   style="accent-color:var(--accent)"/>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);font-size:13.5px">
+                <i class="bi bi-calendar-day me-2" style="color:var(--accent)"></i>Today's Report
+              </div>
+              <div style="color:var(--text-muted);font-size:12px">Aaj ke present students ki list</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                 background:var(--bg-elevated);border:1px solid var(--border-color);
+                 border-radius:var(--radius-md);cursor:pointer;transition:all .2s"
+                 onmouseover="this.style.borderColor='var(--border-accent)'"
+                 onmouseout="this.style.borderColor='var(--border-color)'">
+            <input type="radio" name="reportType" value="monthly"
+                   style="accent-color:var(--accent)"/>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);font-size:13.5px">
+                <i class="bi bi-calendar-month me-2" style="color:var(--green)"></i>Monthly Summary
+              </div>
+              <div style="color:var(--text-muted);font-size:12px">Last 30 days sabhi students</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                 background:var(--bg-elevated);border:1px solid rgba(255,92,92,.2);
+                 border-radius:var(--radius-md);cursor:pointer;transition:all .2s"
+                 onmouseover="this.style.borderColor='var(--red)'"
+                 onmouseout="this.style.borderColor='rgba(255,92,92,.2)'">
+            <input type="radio" name="reportType" value="low_attendance"
+                   style="accent-color:var(--red)"/>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);font-size:13.5px">
+                <i class="bi bi-exclamation-triangle-fill me-2" style="color:var(--red)"></i>Low Attendance Alert
+              </div>
+              <div style="color:var(--text-muted);font-size:12px">75% se kam wale students</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <button onclick="sendEmail()" id="sendBtn" class="btn-icon-primary" style="width:100%;padding:14px">
+        <i class="bi bi-send-fill me-2"></i>Send Email Report
+      </button>
+      <div id="emailResult" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- Download PDF Card -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-file-earmark-pdf-fill me-2" style="color:var(--red)"></i>Download PDF
+      </h5>
+    </div>
+    <div class="info-card-body" style="display:flex;flex-direction:column;gap:14px">
+
+      <div style="background:var(--bg-elevated);border:1px solid var(--border-color);
+           border-radius:var(--radius-md);padding:18px">
+        <div style="font-weight:700;color:var(--text-primary);font-size:14px;margin-bottom:6px">
+          <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>Summary Report
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">
+          All students — last 30 days attendance summary
+        </p>
+        <a href="{{ url_for('email_report.summary_pdf', period=30) }}"
+           class="btn-icon-primary" style="display:inline-flex;padding:9px 20px">
+          <i class="bi bi-download me-2"></i>Download PDF
+        </a>
+      </div>
+
+      <div style="background:var(--bg-elevated);border:1px solid var(--border-color);
+           border-radius:var(--radius-md);padding:18px">
+        <div style="font-weight:700;color:var(--text-primary);font-size:14px;margin-bottom:6px">
+          <i class="bi bi-person-fill me-2" style="color:var(--green)"></i>Student-wise PDF
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">
+          Kisi ek student ka poora attendance record
+        </p>
+        <div class="input-wrap mb-3">
+          <i class="bi bi-search input-icon"></i>
+          <input type="text" id="studentSearchPdf" class="form-field"
+                 placeholder="Student ka naam dhundho..."
+                 oninput="filterPdfStudents(this.value)"
+                 style="padding-left:40px;font-size:13px"/>
+        </div>
+        <div id="pdfStudentList"
+             style="max-height:200px;overflow-y:auto;border:1px solid var(--border-color);
+                    border-radius:var(--radius-sm)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allStudents = [];
+
+// ── Load on page open ─────────────────────────────────────────
+window.addEventListener('load', () => {
+  loadLowAttendance();
+  loadStudentsForPdf();
+});
+
+// ── Low Attendance ────────────────────────────────────────────
+async function loadLowAttendance() {
+  try {
+    const res  = await fetch('/email/api/low-attendance');
+    const data = await res.json();
+
+    document.getElementById('lowCount').textContent = data.total_low + ' students';
+
+    const table = document.getElementById('lowTable');
+    if (!data.students.length) {
+      table.innerHTML = `<div style="text-align:center;padding:28px;color:var(--green)">
+        <i class="bi bi-check-circle-fill" style="font-size:28px;display:block;margin-bottom:10px"></i>
+        <strong>All students above ${data.threshold}%!</strong></div>`;
+      document.getElementById('lowCount').style.background = 'var(--green)';
+      return;
+    }
+
+    table.innerHTML = `
+      <table class="data-table" style="font-size:13px">
+        <thead><tr><th>Name</th><th>Roll No</th><th>Dept</th><th>%</th><th>Status</th></tr></thead>
+        <tbody>
+          ${data.students.map(s => `
+          <tr>
+            <td><div class="student-cell">
+              <div class="student-avatar" style="width:30px;height:30px;font-size:12px">${s.name[0]}</div>
+              <span style="font-weight:600">${s.name}</span>
+            </div></td>
+            <td><span class="code-badge">${s.roll_number}</span></td>
+            <td style="color:var(--text-muted)">${s.department}</td>
+            <td><span style="font-weight:800;color:${s.percentage<50?'var(--red)':'var(--amber)'}">${s.percentage}%</span></td>
+            <td><span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+              background:${s.status==='Critical'?'var(--red-soft)':'var(--amber-soft)'};
+              color:${s.status==='Critical'?'var(--red)':'var(--amber)'}">${s.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) {
+    document.getElementById('lowTable').innerHTML =
+      '<div style="padding:20px;color:var(--text-muted);text-align:center">Error loading data</div>';
+  }
+}
+
+// ── Send Email ────────────────────────────────────────────────
+async function sendEmail() {
+  const email = document.getElementById('toEmail').value.trim();
+  const type  = document.querySelector('input[name="reportType"]:checked')?.value;
+
+  if (!email) { showToast('Email address required!', 'error'); return; }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
+
+  try {
+    const res  = await fetch('/email/send', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ to_email: email, type }),
+    });
+    const data = await res.json();
+    const result = document.getElementById('emailResult');
+
+    if (data.success) {
+      result.innerHTML = `<div style="background:var(--green-soft);border:1px solid rgba(45,212,113,.3);
+        border-radius:var(--radius-sm);padding:12px 16px;color:var(--green);font-size:13.5px;font-weight:600">
+        <i class="bi bi-check-circle-fill me-2"></i>${data.message}</div>`;
+      showToast(data.message, 'success');
+    } else {
+      result.innerHTML = `<div style="background:var(--red-soft);border:1px solid rgba(255,92,92,.3);
+        border-radius:var(--radius-sm);padding:12px 16px;color:var(--red);font-size:13px">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>${data.error}</div>`;
+      showToast(data.error, 'error');
+    }
+  } catch(e) {
+    showToast('Network error', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Send Email Report';
+}
+
+// ── PDF Student List ──────────────────────────────────────────
+async function loadStudentsForPdf() {
+  const res  = await fetch('/students/api/all');
+  allStudents = await res.json();
+  renderPdfList(allStudents);
+}
+
+function filterPdfStudents(q) {
+  const filtered = q.length < 1 ? allStudents
+    : allStudents.filter(s =>
+        s.name.toLowerCase().includes(q.toLowerCase()) ||
+        s.roll_number.toLowerCase().includes(q.toLowerCase()));
+  renderPdfList(filtered);
+}
+
+function renderPdfList(students) {
+  const el = document.getElementById('pdfStudentList');
+  if (!students.length) {
+    el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px">No students</div>';
+    return;
+  }
+  el.innerHTML = students.slice(0, 15).map(s => `
+    <a href="/email/pdf/student/${s.id}"
+       style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+              text-decoration:none;border-bottom:1px solid var(--border-subtle);
+              transition:background .15s"
+       onmouseover="this.style.background='var(--bg-hover)'"
+       onmouseout="this.style.background='transparent'">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-soft);
+        display:flex;align-items:center;justify-content:center;
+        color:var(--accent);font-size:11px;font-weight:700;flex-shrink:0">
+        ${s.name[0]}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="color:var(--text-primary);font-size:13px;font-weight:600;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="color:var(--text-muted);font-size:11px">${s.roll_number}</div>
+      </div>
+      <i class="bi bi-file-earmark-pdf" style="color:var(--red);font-size:16px;flex-shrink:0"></i>
+    </a>`).join('');
+}
+
+function showToast(msg, type='info') {
+  const c={success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
+           warn:['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)'],
+           error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)'],
+           info:['var(--accent-soft)','rgba(82,148,255,.3)','var(--accent)']};
+  const[bg,bd,tc]=c[type]||c.info;
+  const t=document.createElement('div');
+  t.style.cssText=`background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;max-width:320px;box-shadow:var(--shadow-md)`;
+  t.textContent=msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(()=>t.remove(),4000);
+}
+</script>
+{% endblock %}

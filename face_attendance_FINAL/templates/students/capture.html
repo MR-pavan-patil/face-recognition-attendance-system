@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Capture — {{ student.name }}{% endblock %}
+{% block breadcrumb %}Students / Capture Photos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="bi bi-camera-video-fill me-2 text-accent"></i>Dataset Capture</h1>
+    <p class="page-subtitle">
+      Capturing for <strong style="color:var(--text-primary)">{{ student.name }}</strong>
+      &nbsp;·&nbsp;<span class="code-badge">{{ student.roll_number }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('students.list_students') }}" class="btn-icon-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Back to Students
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- Camera Feed -->
+  <div class="col-lg-8">
+    <div class="capture-card animate-in" style="--delay:0.05s">
+
+      <div class="cam-status-bar">
+        <div class="cam-status-dot" id="camStatusDot"></div>
+        <span id="camStatusText">Camera initializing...</span>
+        <div class="cam-controls ms-auto">
+          <button class="cam-ctrl-btn" id="flipBtn" title="Flip Camera">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="video-wrapper">
+        <video id="videoFeed" autoplay playsinline muted></video>
+        <canvas id="overlayCanvas"></canvas>
+        <div class="face-guide">
+          <svg viewBox="0 0 300 360" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="150" cy="175" rx="110" ry="145"
+              fill="none" stroke="rgba(82,148,255,0.5)"
+              stroke-width="2" stroke-dasharray="8 5"/>
+          </svg>
+          <span class="face-guide-label">Position face here</span>
+        </div>
+        <div class="capture-flash" id="captureFlash"></div>
+        <div class="no-camera" id="noCamera" style="display:none">
+          <i class="bi bi-camera-video-off-fill"></i>
+          <p>Camera not accessible</p>
+          <small>Allow camera permission in browser settings</small>
+        </div>
+      </div>
+
+      <div class="cam-bottom-bar">
+        <div class="cam-tip">
+          <i class="bi bi-lightbulb-fill text-accent"></i>
+          <span id="captureTip">Look straight at the camera</span>
+        </div>
+        <button class="capture-btn" id="captureBtn" disabled>
+          <span class="capture-btn-ring"></span>
+          <i class="bi bi-camera-fill"></i>
+        </button>
+        <div class="auto-mode-wrap">
+          <label class="toggle-label">
+            <input type="checkbox" id="autoCapture"/>
+            <span class="toggle-switch"></span>
+            <span class="toggle-text">Auto</span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Progress & Info -->
+  <div class="col-lg-4">
+    <div class="info-card animate-in" style="--delay:0.1s">
+      <div class="info-card-header">
+        <h5 class="info-card-title"><i class="bi bi-graph-up-arrow me-2 text-accent"></i>Capture Progress</h5>
+        <span class="info-card-tag" id="progressTag">0 / 30</span>
+      </div>
+      <div class="info-card-body">
+        <div class="capture-counter">
+          <span id="captureCount">{{ existing_count }}</span>
+          <span class="counter-total">/ 30</span>
+        </div>
+        <div class="progress custom-progress mt-3 mb-2">
+          <div class="progress-bar present-bar" id="captureProgress"
+               style="width:{{ [(existing_count/30*100),100]|min|round }}%"
+               data-width="{{ [(existing_count/30*100),100]|min|round }}">
+          </div>
+        </div>
+        <small class="progress-percent" id="progressPct">
+          {{ [(existing_count/30*100),100]|min|round }}% complete
+        </small>
+        <div class="capture-status-msg" id="statusMsg">
+          {% if existing_count >= 30 %}
+            <i class="bi bi-check-circle-fill text-success me-2"></i>Dataset complete!
+          {% elif existing_count > 0 %}
+            <i class="bi bi-camera me-2 text-accent"></i>{{ 30 - existing_count }} more needed.
+          {% else %}
+            <i class="bi bi-info-circle me-2 text-accent"></i>Click capture or enable Auto.
+          {% endif %}
+        </div>
+        <div class="capture-actions mt-4">
+          <button class="submit-btn" id="markDoneBtn" {% if existing_count < 30 %}disabled{% endif %}>
+            <i class="bi bi-check-circle-fill me-2"></i>Mark Dataset Ready
+          </button>
+          <button class="btn-icon-secondary mt-2 w-100 justify-content-center" id="resetBtn">
+            <i class="bi bi-trash3 me-2"></i>Reset &amp; Recapture
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card animate-in mt-3" style="--delay:0.2s">
+      <div class="info-card-header">
+        <h5 class="info-card-title"><i class="bi bi-lightbulb-fill me-2 text-accent"></i>Capture Tips</h5>
+      </div>
+      <div class="info-card-body">
+        <div class="tip-list">
+          <div class="tip-item"><i class="bi bi-brightness-high-fill"></i><span>Good, even lighting on face</span></div>
+          <div class="tip-item"><i class="bi bi-person-fill"></i><span>Slowly rotate head left and right</span></div>
+          <div class="tip-item"><i class="bi bi-eye-fill"></i><span>Try with and without glasses</span></div>
+          <div class="tip-item"><i class="bi bi-emoji-smile-fill"></i><span>Neutral and slight smile expressions</span></div>
+          <div class="tip-item"><i class="bi bi-x-circle-fill" style="color:var(--red)"></i><span>No group photos or blurry shots</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<input type="hidden" id="studentId"     value="{{ student.id }}"/>
+<input type="hidden" id="studentName"   value="{{ student.name }}"/>
+<input type="hidden" id="existingCount" value="{{ existing_count }}"/>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/capture.js') }}"></script>
+{% endblock %}

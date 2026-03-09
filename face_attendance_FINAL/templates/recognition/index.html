@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Live Recognition{% endblock %}
+{% block breadcrumb %}Live Recognition{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Live Face Recognition</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-camera-video me-1" style="color:var(--accent)"></i>
+      Website se seedha attendance — camera.py ki zaroorat nahi!
+    </p>
+  </div>
+  <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary">
+    <i class="bi bi-calendar-check me-2"></i>View Attendance
+  </a>
+</div>
+
+{% if not encodings_ready %}
+<div class="info-card animate-in mb-4" style="border-color:rgba(255,179,71,.4)">
+  <div class="info-card-body" style="padding:20px 24px;display:flex;gap:14px;align-items:flex-start">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:26px;color:var(--amber);flex-shrink:0;margin-top:2px"></i>
+    <div>
+      <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:6px">Face encodings not ready!</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">
+        Pehle student photos capture karo. Capture ke baad <strong>Done</strong> button dabao — auto encoding ho jaati hai.<br>
+        Ya CMD mein: <code style="color:var(--accent)">python encode_faces.py</code>
+      </p>
+      <a href="{{ url_for('students.list_students') }}" class="btn-icon-primary">
+        <i class="bi bi-camera me-2"></i>Go to Students
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Stats Bar -->
+<div class="mini-stats animate-in mb-4" style="--delay:0.05s">
+  <div class="mini-stat">
+    <i class="bi bi-people-fill" style="color:var(--accent)"></i>
+    <div><span class="ms-val" id="knownCount">{{ known_count }}</span><span class="ms-lbl">Students Loaded</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-calendar-check-fill" style="color:var(--green)"></i>
+    <div><span class="ms-val" id="markedCount">{{ marked_today }}</span><span class="ms-lbl">Marked Today</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-person-bounding-box" style="color:var(--amber)"></i>
+    <div><span class="ms-val" id="sessionCount">0</span><span class="ms-lbl">This Session</span></div>
+  </div>
+</div>
+
+<!-- Camera Card -->
+<div class="info-card animate-in" style="--delay:0.1s">
+  <div class="info-card-header">
+    <h5 class="info-card-title">
+      <span id="statusDot" style="display:inline-block;width:9px;height:9px;border-radius:50%;
+        background:var(--text-disabled);margin-right:8px"></span>
+      <span id="statusText" style="color:var(--text-muted)">Camera Offline</span>
+    </h5>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="startBtn" onclick="startCamera()" class="btn-icon-primary" style="padding:8px 18px">
+        <i class="bi bi-camera-video-fill me-2"></i>Start
+      </button>
+      <button id="stopBtn" onclick="stopCamera()" class="btn-icon-secondary" style="padding:8px 18px;display:none">
+        <i class="bi bi-stop-fill me-2"></i>Stop
+      </button>
+      <button onclick="reloadEncodings()" class="btn-icon-secondary" style="padding:8px 14px" title="Reload Encodings">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Video -->
+  <div style="position:relative;background:#000;border-radius:0 0 var(--radius-lg) var(--radius-lg);overflow:hidden;min-height:280px">
+    <video id="videoEl" autoplay muted playsinline
+           style="width:100%;display:none;max-height:500px;object-fit:cover;
+                  transform:scaleX(-1)"></video><!-- Mirror display only -->
+    <canvas id="overlayCanvas"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
+    <div id="offlinePlaceholder"
+         style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                min-height:280px;gap:14px;background:var(--bg-elevated)">
+      <i class="bi bi-camera-video-off" style="font-size:52px;color:var(--text-disabled)"></i>
+      <p style="color:var(--text-secondary);font-size:15px;font-weight:600;margin:0">Camera not started</p>
+      <p style="color:var(--text-muted);font-size:13px;margin:0;text-align:center;padding:0 20px">
+        Click <b>Start</b> → Allow camera permission → Apna face dikhao
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Result + Log -->
+<div class="responsive-grid-2 animate-in mt-4" style="--delay:0.15s">
+
+  <!-- Last Result -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-person-check me-2 text-accent"></i>Last Result</h5>
+    </div>
+    <div id="resultBody" style="min-height:140px;display:flex;align-items:center;justify-content:center;padding:20px">
+      <p style="color:var(--text-disabled);font-size:13px;text-align:center">
+        <i class="bi bi-hourglass" style="display:block;font-size:28px;margin-bottom:8px"></i>
+        Waiting...
+      </p>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-activity me-2 text-accent"></i>Live Log</h5>
+      <button onclick="document.getElementById('liveLog').innerHTML=''"
+              style="background:none;border:1px solid var(--border-color);border-radius:6px;
+                     color:var(--text-muted);font-size:11px;padding:3px 10px;cursor:pointer">Clear</button>
+    </div>
+    <div id="liveLog" style="max-height:220px;overflow-y:auto;font-size:12px">
+      <div style="padding:20px;text-align:center;color:var(--text-disabled)">Log will appear here...</div>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let stream = null, running = false, timer = null;
+let sessionMarked = 0, markedRolls = new Set();
+
+const video  = document.getElementById('videoEl');
+const canvas = document.getElementById('overlayCanvas');
+const ctx    = canvas.getContext('2d');
+
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    document.getElementById('offlinePlaceholder').style.display = 'none';
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('stopBtn').style.display  = 'inline-flex';
+    setStatus(true);
+    running = true;
+    addLog('Camera started', 'info');
+    setTimeout(runLoop, 2000);
+  } catch(e) {
+    addLog('Camera error: ' + e.message, 'error');
+    showToast('Camera permission denied!', 'error');
+  }
+}
+
+function stopCamera() {
+  running = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (timer)  { clearTimeout(timer); timer = null; }
+  video.style.display = 'none';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('offlinePlaceholder').style.display = 'flex';
+  document.getElementById('startBtn').style.display = 'inline-flex';
+  document.getElementById('stopBtn').style.display  = 'none';
+  setStatus(false);
+}
+
+async function runLoop() {
+  if (!running) return;
+  try {
+    const tmp = document.createElement('canvas');
+    tmp.width  = video.videoWidth  || 640;
+    tmp.height = video.videoHeight || 480;
+    const tc = tmp.getContext('2d');
+    // IMPORTANT: Draw un-mirrored for server (server needs normal image)
+    tc.save();
+    tc.scale(-1, 1);
+    tc.drawImage(video, -tmp.width, 0);
+    tc.restore();
+
+    canvas.width  = tmp.width;
+    canvas.height = tmp.height;
+
+    const frame = tmp.toDataURL('image/jpeg', 0.92);
+    const res   = await fetch('/recognition/api/recognize', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ frame }),
+    });
+    if (!res.ok) throw new Error('Server ' + res.status);
+    const data = await res.json();
+    handleResult(data);
+  } catch(e) {
+    if (running) addLog('Error: ' + e.message, 'error');
+  }
+  if (running) timer = setTimeout(runLoop, 2200);
+}
+
+function handleResult(d) {
+  const rb = document.getElementById('resultBody');
+  if (d.status === 'marked') {
+    if (!markedRolls.has(d.roll_number)) {
+      markedRolls.add(d.roll_number);
+      sessionMarked++;
+      document.getElementById('sessionCount').textContent = sessionMarked;
+      document.getElementById('markedCount').textContent =
+        parseInt(document.getElementById('markedCount').textContent) + 1;
+      addLog(`✓ ${d.name} (${d.confidence}%)`, 'success');
+      showToast(`✓ ${d.name} — Marked Present!`, 'success');
+    }
+    rb.innerHTML = `<div style="text-align:center;padding:20px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--green-soft);
+        border:2px solid var(--green);display:flex;align-items:center;justify-content:center;
+        margin:0 auto 12px;font-size:24px;color:var(--green)">✓</div>
+      <div style="font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--green)">${d.name}</div>
+      <div style="color:var(--text-muted);font-size:12px;margin-top:4px">${d.department||''}</div>
+      <div style="color:var(--green);font-size:13px;margin-top:8px;font-weight:600">Marked at ${d.time||''}</div>
+      <div style="color:var(--text-muted);font-size:11px;margin-top:4px">Confidence: ${d.confidence}%</div>
+    </div>`;
+  } else if (d.status === 'already_marked') {
+    if (!markedRolls.has(d.roll_number+'_d')) {
+      markedRolls.add(d.roll_number+'_d');
+      addLog(`↩ Already marked: ${d.name}`, 'warn');
+    }
+    rb.innerHTML = `<div style="text-align:center;padding:20px">
+      <div style="font-size:32px;margin-bottom:8px">↩</div>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--amber)">${d.name}</div>
+      <div style="color:var(--text-muted);font-size:12px;margin-top:6px">Already marked today</div>
+    </div>`;
+  } else if (d.status === 'no_face') {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  } else if (d.status === 'unknown') {
+    addLog('Unknown face', 'warn');
+    rb.innerHTML = `<div style="text-align:center;padding:20px">
+      <div style="font-size:32px;margin-bottom:8px">❓</div>
+      <div style="color:var(--text-secondary);font-size:14px">Face not in database</div>
+      <div style="color:var(--text-muted);font-size:11px;margin-top:4px">${d.message||''}</div>
+    </div>`;
+  } else if (d.status === 'low_confidence') {
+    rb.innerHTML = `<div style="text-align:center;padding:20px">
+      <div style="font-size:32px;margin-bottom:8px">👤</div>
+      <div style="color:var(--amber);font-size:15px;font-weight:700">Low Confidence ${d.confidence}%</div>
+      <div style="color:var(--text-muted);font-size:12px;margin-top:6px">Move closer & improve lighting</div>
+    </div>`;
+  } else if (d.status === 'no_encodings') {
+    addLog('⚠ No encodings!', 'error');
+    showToast('No encodings — capture photos first!', 'error');
+  }
+}
+
+async function reloadEncodings() {
+  addLog('Reloading encodings...', 'info');
+  const res  = await fetch('/recognition/api/reload', { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('knownCount').textContent = data.students;
+    addLog(`✓ Loaded ${data.students} students`, 'success');
+    showToast(`Encodings reloaded — ${data.students} students`, 'success');
+  } else {
+    addLog('No encodings found', 'error');
+  }
+}
+
+function setStatus(on) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.style.background = on ? 'var(--green)' : 'var(--text-disabled)';
+  dot.style.boxShadow  = on ? '0 0 8px var(--green)' : 'none';
+  txt.textContent = on ? 'Camera Live — Scanning...' : 'Camera Offline';
+  txt.style.color = on ? 'var(--green)' : 'var(--text-muted)';
+}
+
+function addLog(msg, type='info') {
+  const log = document.getElementById('liveLog');
+  if (log.querySelector('.bi-hourglass') || log.textContent.includes('Log will appear')) log.innerHTML = '';
+  const c = {success:'var(--green)',error:'var(--red)',warn:'var(--amber)',info:'var(--accent)'};
+  const t = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const d = document.createElement('div');
+  d.style.cssText='display:flex;gap:8px;padding:7px 14px;border-bottom:1px solid var(--border-subtle)';
+  d.innerHTML=`<span style="color:var(--text-disabled);flex-shrink:0">${t}</span>
+    <span style="color:${c[type]||c.info}">${msg}</span>`;
+  log.prepend(d);
+  while(log.children.length > 40) log.removeChild(log.lastChild);
+}
+
+function showToast(msg, type='success') {
+  const c={success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
+           warn:['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)'],
+           error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)'],
+           info:['var(--accent-soft)','rgba(82,148,255,.3)','var(--accent)']};
+  const [bg,bd,tc]=c[type]||c.info;
+  const t=document.createElement('div');
+  t.style.cssText=`background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;max-width:320px;
+    box-shadow:var(--shadow-md);animation:fadeSlideUp .3s ease`;
+  t.textContent=msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(()=>t.remove(),4000);
+}
+</script>
+{% endblock %}

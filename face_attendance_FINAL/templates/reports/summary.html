@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Reports — {{ start_date.strftime('%d %b') }} to {{ end_date.strftime('%d %b %Y') }}{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Attendance Reports</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-calendar-range me-1"></i>
+      {{ start_date.strftime('%d %b %Y') }} — {{ end_date.strftime('%d %b %Y') }}
+      &nbsp;·&nbsp; {{ working_days }} working days
+    </p>
+  </div>
+  <div style="display:flex;gap:10px">
+    <a href="{{ url_for('reports.export_csv', period=period, dept=selected_dept) }}"
+       class="btn-icon-primary">
+      <i class="bi bi-download me-2"></i>Download CSV
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="info-card animate-in mb-4" style="--delay:0s">
+  <div class="info-card-body" style="padding:16px 24px">
+    <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px">Period</span>
+      {% for val, label in [('week','This Week'),('month','This Month'),('last30','Last 30 Days')] %}
+      <a href="?period={{ val }}&dept={{ selected_dept }}"
+         style="padding:7px 16px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;text-decoration:none;border:1px solid;
+                {% if period == val %}background:var(--accent);color:#fff;border-color:var(--accent)
+                {% else %}background:var(--bg-elevated);color:var(--text-secondary);border-color:var(--border-color){% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-left:8px">Dept</span>
+      <select name="dept" onchange="this.form.submit()"
+              style="background:var(--bg-elevated);border:1px solid var(--border-color);border-radius:var(--radius-sm);
+                     color:var(--text-primary);padding:7px 14px;font-size:13px;outline:none;cursor:pointer">
+        <option value="all" {% if selected_dept=='all' %}selected{% endif %}>All Departments</option>
+        {% for d in all_depts %}
+        <option value="{{ d }}" {% if selected_dept==d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="period" value="{{ period }}">
+    </form>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid animate-in" style="--delay:0.05s">
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap total"><i class="bi bi-people-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Total Students</span>
+        <span class="stat-value">{{ total_students }}</span>
+        <span class="stat-change neutral"><i class="bi bi-building me-1"></i>Enrolled</span>
+      </div>
+    </div><div class="stat-glow total-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap percent"><i class="bi bi-percent"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Avg Attendance</span>
+        <span class="stat-value">{{ avg_attendance }}<span style="font-size:22px;color:var(--text-muted)">%</span></span>
+        <span class="stat-change {% if avg_attendance >= 75 %}positive{% else %}negative{% endif %}">
+          <i class="bi bi-{% if avg_attendance >= 75 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
+          {{ 'Good' if avg_attendance >= 75 else 'Needs attention' }}
+        </span>
+      </div>
+    </div><div class="stat-glow percent-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap present"><i class="bi bi-patch-check-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Above 75%</span>
+        <span class="stat-value">{{ good_count }}</span>
+        <span class="stat-change positive"><i class="bi bi-check-circle me-1"></i>Good standing</span>
+      </div>
+    </div><div class="stat-glow present-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap absent"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Below 50%</span>
+        <span class="stat-value">{{ critical_count }}</span>
+        <span class="stat-change negative"><i class="bi bi-x-circle me-1"></i>Critical</span>
+      </div>
+    </div><div class="stat-glow absent-glow"></div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-top:28px" class="animate-in" style="--delay:0.15s">
+
+  <!-- Daily Trend Chart -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-bar-chart-line me-2 text-accent"></i>Daily Attendance Trend</h5>
+    </div>
+    <div class="info-card-body" style="padding:20px 24px">
+      <canvas id="dailyChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- Dept Breakdown -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-building me-2 text-accent"></i>By Department</h5>
+    </div>
+    <div class="info-card-body">
+      {% for d in dept_summary %}
+      <div style="margin-bottom:14px">
+        <div class="progress-label">
+          <span>{{ d.dept }}</span>
+          <strong>{{ d.pct }}%</strong>
+        </div>
+        <div class="custom-progress">
+          <div class="progress-bar present-bar" style="width:{{ d.pct }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not dept_summary %}
+      <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">No data available</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Student Table -->
+<div class="info-card animate-in mt-4" style="--delay:0.2s">
+  <div class="info-card-header">
+    <h5 class="info-card-title"><i class="bi bi-table me-2 text-accent"></i>Student-wise Report</h5>
+    <span class="info-card-tag">{{ total_students }} students</span>
+  </div>
+
+  {% if student_stats %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Student</th><th>Roll No</th><th>Dept</th>
+          <th>Present</th><th>Working Days</th><th>Attendance %</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in student_stats %}
+        <tr>
+          <td class="row-num">{{ loop.index }}</td>
+          <td>
+            <div class="student-cell">
+              <div class="student-avatar">{{ s.name[0].upper() }}</div>
+              <span class="student-name">{{ s.name }}</span>
+            </div>
+          </td>
+          <td><span class="code-badge">{{ s.roll_number }}</span></td>
+          <td>{{ s.department }}</td>
+          <td style="color:var(--green);font-weight:700">{{ s.days_present }}</td>
+          <td style="color:var(--text-muted)">{{ s.working_days }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;min-width:120px">
+              <div style="flex:1;height:6px;border-radius:10px;background:var(--bg-elevated)">
+                <div style="width:{{ s.percentage }}%;height:100%;border-radius:10px;
+                  background:{% if s.percentage >= 75 %}var(--green){% elif s.percentage >= 50 %}var(--amber){% else %}var(--red){% endif %}"></div>
+              </div>
+              <span style="font-weight:700;font-size:13px;
+                color:{% if s.percentage >= 75 %}var(--green){% elif s.percentage >= 50 %}var(--amber){% else %}var(--red){% endif %}">
+                {{ s.percentage }}%
+              </span>
+            </div>
+          </td>
+          <td>
+            <span style="padding:4px 12px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;
+              {% if s.status == 'Good' %}background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,113,.25)
+              {% elif s.status == 'Low' %}background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,179,71,.25)
+              {% else %}background:var(--red-soft);color:var(--red);border:1px solid rgba(255,92,92,.25){% endif %}">
+              {{ s.status }}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <a href="{{ url_for('reports.student_report', student_id=s.id, period=period) }}"
+                 class="action-btn view" title="View Report"><i class="bi bi-eye-fill"></i></a>
+              <a href="{{ url_for('reports.export_student_csv', student_id=s.id, period=period) }}"
+                 class="action-btn capture" title="Download CSV"><i class="bi bi-download"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-bar-chart"></i>
+    <h5>No attendance data for this period</h5>
+    <p>Run the face recognition camera to mark attendance.</p>
+    <a href="{{ url_for('recognition') }}" class="btn-icon-primary">
+      <i class="bi bi-camera-fill me-2"></i>Start Camera
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const dailyData = {{ daily_counts | tojson }};
+const ctx = document.getElementById('dailyChart');
+if (ctx && dailyData.length > 0) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: dailyData.map(d => d.date),
+      datasets: [
+        {
+          label: 'Present',
+          data: dailyData.map(d => d.present),
+          backgroundColor: 'rgba(45,212,113,0.7)',
+          borderColor: 'rgba(45,212,113,1)',
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'Absent',
+          data: dailyData.map(d => d.absent),
+          backgroundColor: 'rgba(255,92,92,0.4)',
+          borderColor: 'rgba(255,92,92,0.7)',
+          borderWidth: 1, borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#94a3c0', font: { size: 12 } } }
+      },
+      scales: {
+        x: { ticks: { color: '#4e6080', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#4e6080', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

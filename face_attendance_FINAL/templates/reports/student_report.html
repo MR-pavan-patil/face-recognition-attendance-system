@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} — Attendance Report{% endblock %}
+{% block breadcrumb %}Reports / {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ student.name }}</h1>
+    <p class="page-subtitle">
+      <span class="code-badge" style="font-size:13px">{{ student.roll_number }}</span>
+      &nbsp;·&nbsp; {{ student.department }} &nbsp;·&nbsp; {{ student.year }}
+    </p>
+  </div>
+  <div style="display:flex;gap:10px">
+    <a href="{{ url_for('reports.export_student_csv', student_id=student.id, period=period) }}"
+       class="btn-icon-primary">
+      <i class="bi bi-download me-2"></i>Download CSV
+    </a>
+    <a href="{{ url_for('reports.summary') }}" class="btn-icon-secondary">
+      <i class="bi bi-arrow-left me-2"></i>All Reports
+    </a>
+  </div>
+</div>
+
+<!-- Period Filter -->
+<div class="info-card animate-in mb-4" style="--delay:0s">
+  <div class="info-card-body" style="padding:14px 24px">
+    <div style="display:flex;gap:10px;align-items:center">
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px">Period</span>
+      {% for val, label in [('week','This Week'),('month','This Month'),('last30','Last 30 Days')] %}
+      <a href="?period={{ val }}"
+         style="padding:6px 16px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;text-decoration:none;border:1px solid;
+                {% if period == val %}background:var(--accent);color:#fff;border-color:var(--accent)
+                {% else %}background:var(--bg-elevated);color:var(--text-secondary);border-color:var(--border-color){% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="mini-stats animate-in" style="--delay:0.05s">
+  <div class="mini-stat">
+    <i class="bi bi-calendar-check-fill" style="color:var(--green)"></i>
+    <div><span class="ms-val">{{ days_present }}</span><span class="ms-lbl">Days Present</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-calendar3" style="color:var(--accent)"></i>
+    <div><span class="ms-val">{{ working_days }}</span><span class="ms-lbl">Working Days</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-percent" style="color:var(--amber)"></i>
+    <div>
+      <span class="ms-val" style="color:{% if percentage >= 75 %}var(--green){% elif percentage >= 50 %}var(--amber){% else %}var(--red){% endif %}">
+        {{ percentage }}%
+      </span>
+      <span class="ms-lbl">Attendance</span>
+    </div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-trophy-fill" style="color:var(--amber)"></i>
+    <div><span class="ms-val">{{ total_present }}</span><span class="ms-lbl">All-time Present</span></div>
+  </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="info-card animate-in mt-3" style="--delay:0.1s">
+  <div class="info-card-body">
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+      <span style="font-weight:600;color:var(--text-primary)">Attendance Rate</span>
+      <strong style="color:{% if percentage >= 75 %}var(--green){% elif percentage >= 50 %}var(--amber){% else %}var(--red){% endif %}">
+        {{ percentage }}% — {% if percentage >= 75 %}Good Standing{% elif percentage >= 50 %}Low Attendance{% else %}Critical — Needs Improvement{% endif %}
+      </strong>
+    </div>
+    <div style="height:14px;background:var(--bg-elevated);border-radius:10px;overflow:hidden">
+      <div style="width:{{ percentage }}%;height:100%;border-radius:10px;transition:width 1s ease;
+        background:{% if percentage >= 75 %}linear-gradient(90deg,var(--green-dark),var(--green)){% elif percentage >= 50 %}linear-gradient(90deg,var(--amber-dark),var(--amber)){% else %}linear-gradient(90deg,var(--red-dark),var(--red)){% endif %}">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--text-muted)">
+      <span>0%</span>
+      <span style="color:var(--amber)">50% minimum</span>
+      <span style="color:var(--green)">75% required</span>
+      <span>100%</span>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar View -->
+<div class="info-card animate-in mt-4" style="--delay:0.15s">
+  <div class="info-card-header">
+    <h5 class="info-card-title"><i class="bi bi-calendar3 me-2 text-accent"></i>Attendance Calendar</h5>
+    <div style="display:flex;gap:16px;font-size:12px;font-weight:600">
+      <span style="color:var(--green)"><i class="bi bi-circle-fill me-1"></i>Present</span>
+      <span style="color:var(--red)"><i class="bi bi-circle-fill me-1"></i>Absent</span>
+      <span style="color:var(--text-disabled)"><i class="bi bi-circle-fill me-1"></i>Sunday</span>
+    </div>
+  </div>
+  <div class="info-card-body">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px">
+      {% for day in calendar %}
+      <div style="text-align:center;padding:8px 4px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;
+        {% if day.sunday %}background:var(--bg-elevated);color:var(--text-disabled);
+        {% elif day.present %}background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,113,.25)
+        {% else %}background:var(--red-soft);color:var(--red);border:1px solid rgba(255,92,92,.2){% endif %}">
+        <div style="font-size:9px;margin-bottom:2px;opacity:.7">{{ day.date.strftime('%a') }}</div>
+        {{ day.date.strftime('%d') }}
+        {% if not day.sunday %}
+        <div style="font-size:9px;margin-top:2px">{{ 'P' if day.present else 'A' }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Detailed Records -->
+<div class="info-card animate-in mt-4" style="--delay:0.2s">
+  <div class="info-card-header">
+    <h5 class="info-card-title"><i class="bi bi-list-check me-2 text-accent"></i>Attendance Log</h5>
+    <span class="info-card-tag">{{ records | length }} records</span>
+  </div>
+
+  {% if records %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Day</th><th>Time In</th><th>Status</th><th>Marked By</th></tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td class="row-num">{{ loop.index }}</td>
+          <td style="color:var(--text-primary);font-weight:600">{{ r.date.strftime('%d %B %Y') }}</td>
+          <td style="color:var(--text-muted)">{{ r.date.strftime('%A') }}</td>
+          <td style="color:var(--green);font-weight:700">{{ r.time_in.strftime('%I:%M %p') if r.time_in else '--' }}</td>
+          <td><span class="status-pill ready"><i class="bi bi-check-circle-fill"></i>{{ r.status }}</span></td>
+          <td class="text-muted-sm">
+            {% if r.marked_by == 'FaceRecognition' %}
+            <i class="bi bi-camera me-1 text-accent"></i>Face Recognition
+            {% else %}
+            <i class="bi bi-person me-1"></i>{{ r.marked_by }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-calendar-x"></i>
+    <h5>No attendance in this period</h5>
+    <p>No records found for {{ start_date.strftime('%d %b') }} to {{ end_date.strftime('%d %b %Y') }}.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
