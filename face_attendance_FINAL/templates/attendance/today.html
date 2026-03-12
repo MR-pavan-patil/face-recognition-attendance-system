@@ -1,224 +1,220 @@
-{% extends "base.html" %}
-{% block title %}Today's Attendance{% endblock %}
-{% block breadcrumb %}Attendance{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Today's Attendance{% endblock %} {% block breadcrumb %}Attendance{% endblock %} {% block content %}
 <div class="page-header">
-  <div>
-    <h1 class="page-title">Today's Attendance</h1>
-    <p class="page-subtitle">
-      <i class="bi bi-calendar3 me-1"></i>{{ stats.day_name }}, {{ stats.date }}
-    </p>
-  </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <a href="{{ url_for('recognition.index') }}" class="btn-icon-primary">
-      <i class="bi bi-camera-video-fill me-2"></i>Live Recognition
-    </a>
-       class="btn-icon-secondary" style="color:var(--red);border-color:rgba(255,92,92,.3)">
-    </a>
-    <a href="{{ url_for('attendance.absent_list') }}" class="btn-icon-secondary" style="color:var(--red);border-color:rgba(255,92,92,.3)">
-      <i class="bi bi-person-x-fill me-2"></i>Absent List
-    </a>
-    <a href="{{ url_for('attendance.history') }}" class="btn-icon-secondary">
-      <i class="bi bi-clock-history me-2"></i>History
-    </a>
-  </div>
+    <div>
+        <h1 class="page-title">Today's Attendance</h1>
+        <p class="page-subtitle">
+            <i class="bi bi-calendar3 me-1"></i>{{ stats.day_name }}, {{ stats.date }}
+        </p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="{{ url_for('recognition.index') }}" class="btn-icon-primary">
+            <i class="bi bi-camera-video-fill me-2"></i>Live Recognition
+        </a>
+        <a href="{{ url_for('attendance.absent_list') }}" class="btn-icon-secondary" style="color:var(--red);border-color:rgba(255,92,92,.3)">
+            <i class="bi bi-person-x-fill me-2"></i>Absent List
+        </a>
+        <a href="{{ url_for('attendance.history') }}" class="btn-icon-secondary">
+            <i class="bi bi-clock-history me-2"></i>History
+        </a>
+    </div>
 </div>
 
 <!-- Stats -->
 <div class="stats-grid animate-in" style="--delay:0s">
-  <div class="stat-card">
-    <div class="stat-card-inner">
-      <div class="stat-icon-wrap total"><i class="bi bi-people-fill"></i></div>
-      <div class="stat-info">
-        <span class="stat-label">Total</span>
-        <span class="stat-value">{{ stats.total }}</span>
-        <span class="stat-change neutral">Students</span>
-      </div>
-    </div><div class="stat-glow total-glow"></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-card-inner">
-      <div class="stat-icon-wrap present"><i class="bi bi-person-check-fill"></i></div>
-      <div class="stat-info">
-        <span class="stat-label">Present</span>
-        <span class="stat-value" id="presentCount">{{ stats.present }}</span>
-        <span class="stat-change positive">{{ stats.percentage }}%</span>
-      </div>
-    </div><div class="stat-glow present-glow"></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-card-inner">
-      <div class="stat-icon-wrap absent"><i class="bi bi-person-x-fill"></i></div>
-      <div class="stat-info">
-        <span class="stat-label">Absent</span>
-        <span class="stat-value">{{ stats.absent }}</span>
-        <span class="stat-change negative">Not marked</span>
-      </div>
-    </div><div class="stat-glow absent-glow"></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-card-inner">
-      <div class="stat-icon-wrap percent"><i class="bi bi-percent"></i></div>
-      <div class="stat-info">
-        <span class="stat-label">Percentage</span>
-        <span class="stat-value">{{ stats.percentage }}<span style="font-size:20px">%</span></span>
-        <span class="stat-change {% if stats.percentage >= 75 %}positive{% else %}negative{% endif %}">
+    <div class="stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap total"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total</span>
+                <span class="stat-value">{{ stats.total }}</span>
+                <span class="stat-change neutral">Students</span>
+            </div>
+        </div>
+        <div class="stat-glow total-glow"></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap present"><i class="bi bi-person-check-fill"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Present</span>
+                <span class="stat-value" id="presentCount">{{ stats.present }}</span>
+                <span class="stat-change positive">{{ stats.percentage }}%</span>
+            </div>
+        </div>
+        <div class="stat-glow present-glow"></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap absent"><i class="bi bi-person-x-fill"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Absent</span>
+                <span class="stat-value">{{ stats.absent }}</span>
+                <span class="stat-change negative">Not marked</span>
+            </div>
+        </div>
+        <div class="stat-glow absent-glow"></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap percent"><i class="bi bi-percent"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Percentage</span>
+                <span class="stat-value">{{ stats.percentage }}<span style="font-size:20px">%</span></span>
+                <span class="stat-change {% if stats.percentage >= 75 %}positive{% else %}negative{% endif %}">
           {{ 'Good' if stats.percentage >= 75 else 'Low' }}
         </span>
-      </div>
-    </div><div class="stat-glow percent-glow"></div>
-  </div>
+            </div>
+        </div>
+        <div class="stat-glow percent-glow"></div>
+    </div>
 </div>
 
 <!-- Search -->
 <div class="info-card animate-in mt-4" style="--delay:0.1s">
-  <div class="info-card-body" style="padding:14px 20px">
-    <form method="GET" style="display:flex;gap:10px">
-      <div class="input-wrap" style="flex:1">
-        <i class="bi bi-search input-icon"></i>
-        <input type="text" class="form-field" name="search"
-               placeholder="Search by name or roll number..."
-               value="{{ search }}" style="padding-left:40px;height:38px;font-size:13px"/>
-      </div>
-      <button type="submit" class="btn-icon-primary" style="padding:8px 18px">Search</button>
-      {% if search %}
-      <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary" style="padding:8px 14px">
-        <i class="bi bi-x"></i>
-      </a>
-      {% endif %}
-    </form>
-  </div>
+    <div class="info-card-body" style="padding:14px 20px">
+        <form method="GET" style="display:flex;gap:10px">
+            <div class="input-wrap" style="flex:1">
+                <i class="bi bi-search input-icon"></i>
+                <input type="text" class="form-field" name="search" placeholder="Search by name or roll number..." value="{{ search }}" style="padding-left:40px;height:38px;font-size:13px" />
+            </div>
+            <button type="submit" class="btn-icon-primary" style="padding:8px 18px">Search</button> {% if search %}
+            <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary" style="padding:8px 14px">
+                <i class="bi bi-x"></i>
+            </a>
+            {% endif %}
+        </form>
+    </div>
 </div>
 
 <!-- Attendance Table -->
 <div class="info-card animate-in mt-3" style="--delay:0.15s">
-  <div class="info-card-header">
-    <h5 class="info-card-title">
-      <i class="bi bi-list-check me-2 text-accent"></i>Marked Present Today
-    </h5>
-    <span class="info-card-tag" id="totalTag">{{ records.total }} records</span>
-  </div>
+    <div class="info-card-header">
+        <h5 class="info-card-title">
+            <i class="bi bi-list-check me-2 text-accent"></i>Marked Present Today
+        </h5>
+        <span class="info-card-tag" id="totalTag">{{ records.total }} records</span>
+    </div>
 
-  {% if records.items %}
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>#</th><th>Student</th><th>Roll No</th>
-          <th>Time In</th><th>Marked By</th><th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="attendanceTable">
-        {% for att, stu in records.items %}
-        <tr id="att-row-{{ att.id }}">
-          <td class="row-num">{{ loop.index }}</td>
-          <td>
-            <div class="student-cell">
-              <div class="student-avatar">{{ stu.name[0].upper() }}</div>
-              <div>
-                <div class="student-name">{{ stu.name }}</div>
-                <div class="student-email">{{ stu.department }} · {{ stu.year }}</div>
-              </div>
-            </div>
-          </td>
-          <td><span class="code-badge">{{ stu.roll_number }}</span></td>
-          <td style="color:var(--green);font-weight:700">
-            {{ att.time_in.strftime('%I:%M %p') if att.time_in else '--' }}
-          </td>
-          <td>
-            {% if att.marked_by in ['WebRecognition', 'FaceRecognition'] %}
-            <span style="color:var(--accent);font-size:12px">
+    {% if records.items %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>Roll No</th>
+                    <th>Time In</th>
+                    <th>Marked By</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceTable">
+                {% for att, stu in records.items %}
+                <tr id="att-row-{{ att.id }}">
+                    <td class="row-num">{{ loop.index }}</td>
+                    <td>
+                        <div class="student-cell">
+                            <div class="student-avatar">{{ stu.name[0].upper() }}</div>
+                            <div>
+                                <div class="student-name">{{ stu.name }}</div>
+                                <div class="student-email">{{ stu.department }} · {{ stu.year }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="code-badge">{{ stu.roll_number }}</span></td>
+                    <td style="color:var(--green);font-weight:700">
+                        {{ att.time_in.strftime('%I:%M %p') if att.time_in else '--' }}
+                    </td>
+                    <td>
+                        {% if att.marked_by in ['WebRecognition', 'FaceRecognition'] %}
+                        <span style="color:var(--accent);font-size:12px">
               <i class="bi bi-camera-fill me-1"></i>Auto
-            </span>
-            {% elif att.marked_by == 'Manual' %}
-            <span style="color:var(--amber);font-size:12px">
+            </span> {% elif att.marked_by == 'Manual' %}
+                        <span style="color:var(--amber);font-size:12px">
               <i class="bi bi-hand-index me-1"></i>Manual
-            </span>
-            {% else %}
-            <span style="color:var(--text-muted);font-size:12px">{{ att.marked_by }}</span>
-            {% endif %}
-          </td>
-          <td>
-            <!-- UNDO Button -->
-            <button onclick="undoAttendance({{ att.id }}, '{{ stu.name }}')"
-                    class="action-btn delete" title="Remove attendance (undo)"
-                    style="background:var(--red-soft);color:var(--red);border-color:rgba(255,92,92,.3)">
+            </span> {% else %}
+                        <span style="color:var(--text-muted);font-size:12px">{{ att.marked_by }}</span> {% endif %}
+                    </td>
+                    <td>
+                        <!-- UNDO Button -->
+                        <button onclick="undoAttendance({{ att.id }}, '{{ stu.name }}')" class="action-btn delete" title="Remove attendance (undo)" style="background:var(--red-soft);color:var(--red);border-color:rgba(255,92,92,.3)">
               <i class="bi bi-arrow-counterclockwise"></i>
             </button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty-state">
-    <i class="bi bi-calendar-x"></i>
-    <h5>No attendance marked yet today</h5>
-    <p>Use Live Recognition or Manual marking to mark attendance.</p>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <a href="{{ url_for('recognition.index') }}" class="btn-icon-primary">
-        <i class="bi bi-camera-video-fill me-2"></i>Start Recognition
-      </a>
-      <a href="{{ url_for('students.list_students') }}" class="btn-icon-secondary">
-        <i class="bi bi-hand-index me-2"></i>Manual Mark
-      </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-  </div>
-  {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-calendar-x"></i>
+        <h5>No attendance marked yet today</h5>
+        <p>Use Live Recognition or Manual marking to mark attendance.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a href="{{ url_for('recognition.index') }}" class="btn-icon-primary">
+                <i class="bi bi-camera-video-fill me-2"></i>Start Recognition
+            </a>
+            <a href="{{ url_for('students.list_students') }}" class="btn-icon-secondary">
+                <i class="bi bi-hand-index me-2"></i>Manual Mark
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Toast -->
 <div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script>
-async function undoAttendance(attId, name) {
-  if (!confirm(`Remove attendance for "${name}"?\nThis cannot be undone.`)) return;
+    async function undoAttendance(attId, name) {
+        if (!confirm(`Remove attendance for "${name}"?\nThis cannot be undone.`)) return;
 
-  try {
-    const res  = await fetch('/attendance/api/undo', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ attendance_id: attId }),
-    });
-    const data = await res.json();
+        try {
+            const res = await fetch('/attendance/api/undo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    attendance_id: attId
+                }),
+            });
+            const data = await res.json();
 
-    if (data.success) {
-      // Remove row with animation
-      const row = document.getElementById('att-row-' + attId);
-      if (row) {
-        row.style.transition = 'opacity 0.4s, transform 0.4s';
-        row.style.opacity    = '0';
-        row.style.transform  = 'translateX(30px)';
-        setTimeout(() => row.remove(), 400);
-      }
-      showToast(`↩ ${name} — attendance removed`, 'warn');
-    } else {
-      showToast('Error: ' + data.error, 'error');
+            if (data.success) {
+                // Remove row with animation
+                const row = document.getElementById('att-row-' + attId);
+                if (row) {
+                    row.style.transition = 'opacity 0.4s, transform 0.4s';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(30px)';
+                    setTimeout(() => row.remove(), 400);
+                }
+                showToast(`↩ ${name} — attendance removed`, 'warn');
+            } else {
+                showToast('Error: ' + data.error, 'error');
+            }
+        } catch (e) {
+            showToast('Network error', 'error');
+        }
     }
-  } catch (e) {
-    showToast('Network error', 'error');
-  }
-}
 
-function showToast(msg, type = 'info') {
-  const colors = {
-    success: ['var(--green-soft)',  'rgba(45,212,113,.3)',  'var(--green)'],
-    warn:    ['var(--amber-soft)',  'rgba(255,179,71,.3)',   'var(--amber)'],
-    error:   ['var(--red-soft)',    'rgba(255,92,92,.3)',    'var(--red)'],
-    info:    ['var(--accent-soft)', 'rgba(82,148,255,.3)',   'var(--accent)'],
-  };
-  const [bg, bd, tc] = colors[type] || colors.info;
-  const t = document.createElement('div');
-  t.style.cssText = `background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    function showToast(msg, type = 'info') {
+        const colors = {
+            success: ['var(--green-soft)', 'rgba(45,212,113,.3)', 'var(--green)'],
+            warn: ['var(--amber-soft)', 'rgba(255,179,71,.3)', 'var(--amber)'],
+            error: ['var(--red-soft)', 'rgba(255,92,92,.3)', 'var(--red)'],
+            info: ['var(--accent-soft)', 'rgba(82,148,255,.3)', 'var(--accent)'],
+        };
+        const [bg, bd, tc] = colors[type] || colors.info;
+        const t = document.createElement('div');
+        t.style.cssText = `background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
     padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;
     max-width:320px;box-shadow:var(--shadow-md)`;
-  t.textContent = msg;
-  document.getElementById('toastBox').prepend(t);
-  setTimeout(() => t.remove(), 4000);
-}
+        t.textContent = msg;
+        document.getElementById('toastBox').prepend(t);
+        setTimeout(() => t.remove(), 4000);
+    }
 </script>
 {% endblock %}
