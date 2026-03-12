@@ -64,6 +64,7 @@
           <th>Roll Number</th>
           <th>Department</th>
           <th>Year</th>
+          <th>30-Day %</th>
           <th>Dataset</th>
           <th>Actions</th>
         </tr>
@@ -84,6 +85,17 @@
           <td><span class="code-badge">{{ student.roll_number }}</span></td>
           <td>{{ student.department }}</td>
           <td><span class="year-tag">{{ student.year }}</span></td>
+          <td>
+            <div style="width:76px">
+              <div style="font-size:12px;font-weight:700;margin-bottom:3px"
+                   id="pct-{{ student.id }}" style="color:var(--text-muted)">—</div>
+              <div style="height:5px;background:var(--bg-input);border-radius:3px;overflow:hidden">
+                <div id="bar-{{ student.id }}"
+                     style="height:100%;width:0%;border-radius:3px;
+                            background:var(--accent);transition:width .8s ease"></div>
+              </div>
+            </div>
+          </td>
           <td>
             {% if student.dataset_ready %}
             <span class="status-pill ready"><i class="bi bi-check-circle-fill"></i>Ready</span>

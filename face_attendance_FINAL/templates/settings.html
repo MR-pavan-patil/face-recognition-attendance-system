@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">College info, thresholds, admin password</p>
+  </div>
+</div>
+
+<div style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+
+  <!-- College Info -->
+  <div class="info-card animate-in" style="--delay:0s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-building-fill me-2 text-accent"></i>College Info
+      </h5>
+    </div>
+    <div class="info-card-body" style="padding:22px 24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="field-group" style="grid-column:1/-1">
+          <label class="field-label">College Name</label>
+          <div class="input-wrap">
+            <i class="bi bi-building input-icon"></i>
+            <input type="text" id="collegeName" class="form-field"
+                   value="{{ config.COLLEGE }}" style="padding-left:40px"
+                   placeholder="Your College Name"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">App Name</label>
+          <div class="input-wrap">
+            <i class="bi bi-app input-icon"></i>
+            <input type="text" id="appName" class="form-field"
+                   value="{{ config.APP_NAME }}" style="padding-left:40px"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Low Attendance Threshold (%)</label>
+          <div class="input-wrap">
+            <i class="bi bi-percent input-icon"></i>
+            <input type="number" id="threshold" class="form-field"
+                   value="{{ config.LOW_ATTENDANCE_THRESHOLD }}"
+                   min="50" max="90" style="padding-left:40px"/>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:5px">
+            Is se kam hoga toh alert dikhega (default: 75%)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Credentials -->
+  <div class="info-card animate-in" style="--delay:0.05s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-shield-lock-fill me-2 text-accent"></i>Admin Login
+      </h5>
+    </div>
+    <div class="info-card-body" style="padding:22px 24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="field-group">
+          <label class="field-label">Admin Username</label>
+          <div class="input-wrap">
+            <i class="bi bi-person-badge input-icon"></i>
+            <input type="text" id="adminUser" class="form-field"
+                   value="{{ config.ADMIN_USERNAME }}" style="padding-left:40px"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Admin Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-key input-icon"></i>
+            <input type="password" id="adminPwd" class="form-field"
+                   value="{{ config.ADMIN_PASSWORD }}" style="padding-left:40px"/>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--amber-soft);border:1px solid rgba(255,179,71,.3);
+           border-radius:var(--radius-sm);padding:10px 16px;margin-top:14px;font-size:12.5px;
+           color:var(--amber)">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Password change karne ke baad app restart karna padega!
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div style="display:flex;gap:12px">
+    <button onclick="saveSettings()" id="saveBtn" class="btn-icon-primary" style="flex:1;padding:14px;font-size:15px">
+      <i class="bi bi-floppy-fill me-2"></i>Save All Settings
+    </button>
+  </div>
+  <div id="saveResult"></div>
+
+  <!-- App Info -->
+  <div class="info-card animate-in" style="--delay:0.1s;border-color:var(--border-subtle)">
+    <div class="info-card-body" style="padding:18px 24px">
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px">Version</div>
+          <div style="color:var(--text-primary);font-weight:700;margin-top:3px">FaceAttend v10</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px">Project</div>
+          <div style="color:var(--text-primary);font-weight:700;margin-top:3px">BCA Final Year</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px">Database</div>
+          <div style="color:var(--green);font-weight:700;margin-top:3px" id="dbStatus">Checking...</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px">Encodings</div>
+          <div style="color:var(--accent);font-weight:700;margin-top:3px" id="encStatus">Checking...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function saveSettings() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+
+  const payload = {
+    college       : document.getElementById('collegeName').value.trim(),
+    app_name      : document.getElementById('appName').value.trim(),
+    threshold     : parseInt(document.getElementById('threshold').value),
+    admin_username: document.getElementById('adminUser').value.trim(),
+    admin_password: document.getElementById('adminPwd').value.trim(),
+  };
+
+  const res  = await fetch('/settings/api/save', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify(payload),
+  });
+  const data = await res.json();
+  const el   = document.getElementById('saveResult');
+
+  if (data.success) {
+    el.innerHTML = `<div style="background:var(--green-soft);border:1px solid rgba(45,212,113,.3);
+      border-radius:var(--radius-sm);padding:12px 16px;color:var(--green);font-size:13.5px;font-weight:600">
+      <i class="bi bi-check-circle-fill me-2"></i>${data.message}</div>`;
+    showToast('Settings saved! ✓', 'success');
+  } else {
+    el.innerHTML = `<div style="background:var(--red-soft);border:1px solid rgba(255,92,92,.3);
+      border-radius:var(--radius-sm);padding:12px 16px;color:var(--red);font-size:13px">
+      <i class="bi bi-x-circle-fill me-2"></i>${data.error}</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-floppy-fill me-2"></i>Save All Settings';
+}
+
+// Status checks
+(async () => {
+  try {
+    const r = await fetch('/capture/api/encode_status');
+    const d = await r.json();
+    document.getElementById('encStatus').textContent =
+      d.ready ? `${d.students} students (${d.encodings} enc)` : 'Not ready';
+    document.getElementById('encStatus').style.color =
+      d.ready ? 'var(--green)' : 'var(--amber)';
+  } catch(e) {}
+  document.getElementById('dbStatus').textContent = 'Connected ✓';
+})();
+
+function showToast(msg, type='success') {
+  const c={success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
+           error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)']};
+  const[bg,bd,tc]=c[type]||c.success;
+  const t=document.createElement('div');
+  t.style.cssText=`background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;max-width:300px;box-shadow:var(--shadow-md)`;
+  t.textContent=msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(()=>t.remove(),4000);
+}
+</script>
+{% endblock %}

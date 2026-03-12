@@ -65,6 +65,13 @@
       <button id="stopBtn" onclick="stopCamera()" class="btn-icon-secondary" style="padding:8px 18px;display:none">
         <i class="bi bi-stop-fill me-2"></i>Stop
       </button>
+      <button onclick="toggleVoice()" id="voiceBtn"
+              style="padding:8px 14px;border-radius:var(--radius-sm);
+                     background:var(--green-soft);color:var(--green);
+                     border:1px solid rgba(45,212,113,.3);cursor:pointer;
+                     font-size:15px;transition:all .2s" title="Voice ON/OFF">
+        🔊
+      </button>
       <button onclick="reloadEncodings()" class="btn-icon-secondary" style="padding:8px 14px" title="Reload Encodings">
         <i class="bi bi-arrow-clockwise"></i>
       </button>
@@ -206,6 +213,7 @@ function handleResult(d) {
         parseInt(document.getElementById('markedCount').textContent) + 1;
       addLog(`✓ ${d.name} (${d.confidence}%)`, 'success');
       showToast(`✓ ${d.name} — Marked Present!`, 'success');
+      speak(d.name, 'marked');
     }
     rb.innerHTML = `<div style="text-align:center;padding:20px">
       <div style="width:56px;height:56px;border-radius:50%;background:var(--green-soft);
@@ -220,6 +228,7 @@ function handleResult(d) {
     if (!markedRolls.has(d.roll_number+'_d')) {
       markedRolls.add(d.roll_number+'_d');
       addLog(`↩ Already marked: ${d.name}`, 'warn');
+      speak(d.name, 'already_marked');
     }
     rb.innerHTML = `<div style="text-align:center;padding:20px">
       <div style="font-size:32px;margin-bottom:8px">↩</div>
@@ -280,6 +289,56 @@ function addLog(msg, type='info') {
     <span style="color:${c[type]||c.info}">${msg}</span>`;
   log.prepend(d);
   while(log.children.length > 40) log.removeChild(log.lastChild);
+}
+
+// ── VOICE ANNOUNCEMENT ───────────────────────────────────────
+let voiceEnabled = true;
+const announcedToday = new Set(); // Avoid repeating same name
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById('voiceBtn');
+  btn.textContent   = voiceEnabled ? '🔊' : '🔇';
+  btn.style.background     = voiceEnabled ? 'var(--green-soft)' : 'var(--bg-elevated)';
+  btn.style.color          = voiceEnabled ? 'var(--green)'      : 'var(--text-muted)';
+  btn.style.borderColor    = voiceEnabled ? 'rgba(45,212,113,.3)' : 'var(--border-color)';
+  addLog(voiceEnabled ? '🔊 Voice ON' : '🔇 Voice OFF', 'info');
+}
+
+function speak(name, status) {
+  if (!voiceEnabled) return;
+  if (!window.speechSynthesis) return;
+
+  // Stop any ongoing speech
+  window.speechSynthesis.cancel();
+
+  let text = '';
+  if (status === 'marked') {
+    text = `${name}, attendance marked`;
+  } else if (status === 'already_marked') {
+    if (announcedToday.has(name + '_dup')) return; // Say only once
+    announcedToday.add(name + '_dup');
+    text = `${name}, already marked`;
+  } else if (status === 'unknown') {
+    text = 'Unknown person';
+  }
+
+  if (!text) return;
+
+  const utt  = new SpeechSynthesisUtterance(text);
+  utt.lang   = 'en-IN';   // Indian English accent
+  utt.rate   = 1.0;
+  utt.pitch  = 1.0;
+  utt.volume = 1.0;
+
+  // Try to use a good voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v =>
+    v.lang.includes('en-IN') || v.lang.includes('en-GB') || v.lang.includes('en-US')
+  );
+  if (preferred) utt.voice = preferred;
+
+  window.speechSynthesis.speak(utt);
 }
 
 function showToast(msg, type='success') {

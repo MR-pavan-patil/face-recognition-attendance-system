@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Absent Students{% endblock %}
+{% block breadcrumb %}Attendance / Absent{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Absent Students</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-person-x-fill me-1" style="color:var(--red)"></i>
+      {{ selected_date.strftime('%A, %d %B %Y') }}
+    </p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary">
+      <i class="bi bi-person-check me-2"></i>Present List
+    </a>
+    <a href="#" onclick="window.print()" class="btn-icon-secondary">
+      <i class="bi bi-printer me-2"></i>Print
+    </a>
+  </div>
+</div>
+
+<!-- Date Selector -->
+<div class="info-card animate-in mb-4" style="--delay:0s">
+  <div class="info-card-body" style="padding:14px 20px">
+    <form method="GET" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <label style="color:var(--text-secondary);font-size:13.5px;font-weight:600">Date:</label>
+      <input type="date" name="date"
+             value="{{ selected_date.strftime('%Y-%m-%d') }}"
+             style="background:var(--bg-input);border:1px solid var(--border-color);
+                    border-radius:var(--radius-sm);color:var(--text-primary);
+                    padding:8px 14px;font-size:13px;outline:none"/>
+      <button type="submit" class="btn-icon-primary" style="padding:8px 18px">View</button>
+    </form>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="mini-stats animate-in mb-4" style="--delay:0.05s">
+  <div class="mini-stat">
+    <i class="bi bi-people-fill" style="color:var(--accent)"></i>
+    <div><span class="ms-val">{{ total }}</span><span class="ms-lbl">Total</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-person-check-fill" style="color:var(--green)"></i>
+    <div><span class="ms-val">{{ present }}</span><span class="ms-lbl">Present</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-person-x-fill" style="color:var(--red)"></i>
+    <div><span class="ms-val">{{ absent }}</span><span class="ms-lbl">Absent</span></div>
+  </div>
+  <div class="mini-stat">
+    <i class="bi bi-percent" style="color:var(--amber)"></i>
+    <div>
+      <span class="ms-val" style="color:{{ 'var(--green)' if percentage >= 75 else 'var(--red)' }}">
+        {{ percentage }}<span style="font-size:14px">%</span>
+      </span>
+      <span class="ms-lbl">Attendance</span>
+    </div>
+  </div>
+</div>
+
+<!-- Absent Table -->
+<div class="info-card animate-in" style="--delay:0.1s">
+  <div class="info-card-header">
+    <h5 class="info-card-title" style="color:var(--red)">
+      <i class="bi bi-person-x-fill me-2"></i>Absent — {{ absent }} students
+    </h5>
+    {% if absent > 0 %}
+    <button onclick="markAllPresent()" id="markAllBtn"
+            class="btn-icon-primary" style="padding:7px 16px;background:var(--green);border-color:var(--green)">
+      <i class="bi bi-check-all me-2"></i>Mark All Present
+    </button>
+    {% endif %}
+  </div>
+
+  {% if absent_students %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Student</th><th>Roll No</th><th>Dept</th><th>Year</th><th>Mark Present</th></tr>
+      </thead>
+      <tbody id="absentTable">
+        {% for s in absent_students %}
+        <tr id="arow-{{ s.id }}">
+          <td class="row-num">{{ loop.index }}</td>
+          <td>
+            <div class="student-cell">
+              <div class="student-avatar">{{ s.name[0].upper() }}</div>
+              <div>
+                <div class="student-name">{{ s.name }}</div>
+                <div class="student-email">{{ s.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="code-badge">{{ s.roll_number }}</span></td>
+          <td style="color:var(--text-secondary);font-size:13px">{{ s.department }}</td>
+          <td style="color:var(--text-muted);font-size:13px">{{ s.year }}</td>
+          <td>
+            <button onclick="markPresent({{ s.id }}, '{{ s.name }}')"
+                    id="mbtn-{{ s.id }}"
+                    style="background:var(--green-soft);color:var(--green);
+                           border:1px solid rgba(45,212,113,.3);border-radius:8px;
+                           padding:7px 16px;font-size:12px;font-weight:700;
+                           cursor:pointer;white-space:nowrap;display:inline-flex;
+                           align-items:center;gap:6px">
+              <i class="bi bi-check-lg"></i>Mark Present
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-patch-check-fill" style="color:var(--green)"></i>
+    <h5 style="color:var(--green)">Sab present hain!</h5>
+    <p>{{ selected_date.strftime('%d %B %Y') }} ko koi absent nahi.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;
+     display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+
+<style>
+@media print {
+  .sidebar, .page-header .btn-icon-secondary, #toastBox,
+  th:last-child, td:last-child { display:none!important }
+  body { background:#fff!important; color:#000!important }
+  .info-card { border:1px solid #ddd!important; background:#fff!important }
+  .student-name, .stat-value, .ms-val { color:#000!important }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SEL_DATE = "{{ selected_date.strftime('%Y-%m-%d') }}";
+
+async function markPresent(studentId, name) {
+  const btn = document.getElementById('mbtn-' + studentId);
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Marking...';
+
+  const res  = await fetch('/attendance/api/mark', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify({ student_id: studentId, date: SEL_DATE }),
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    const row = document.getElementById('arow-' + studentId);
+    row.style.transition = 'opacity .4s, transform .4s';
+    row.style.opacity    = '0';
+    row.style.transform  = 'translateX(30px)';
+    setTimeout(() => row.remove(), 400);
+    showToast(`✓ ${name} marked present`, 'success');
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Mark Present';
+    showToast(data.message || data.error, 'warn');
+  }
+}
+
+async function markAllPresent() {
+  if (!confirm('Sabhi absent students ko present mark karein?')) return;
+  const rows = document.querySelectorAll('[id^="arow-"]');
+  const btn  = document.getElementById('markAllBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Marking...';
+
+  let count = 0;
+  for (const row of rows) {
+    const sid = row.id.replace('arow-', '');
+    const res = await fetch('/attendance/api/mark', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ student_id: parseInt(sid), date: SEL_DATE }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      row.style.opacity = '0';
+      setTimeout(() => row.remove(), 300);
+      count++;
+    }
+    await new Promise(r => setTimeout(r, 150)); // Small delay
+  }
+  showToast(`✓ ${count} students marked present!`, 'success');
+  setTimeout(() => location.reload(), 1500);
+}
+
+function showToast(msg, type='success') {
+  const c = {
+    success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
+    warn:   ['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)'],
+    error:  ['var(--red-soft)','rgba(255,92,92,.3)','var(--red)'],
+  };
+  const [bg,bd,tc] = c[type]||c.success;
+  const t = document.createElement('div');
+  t.style.cssText = `background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;
+    max-width:300px;box-shadow:var(--shadow-md)`;
+  t.textContent = msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(() => t.remove(), 3500);
+}
+</script>
+{% endblock %}

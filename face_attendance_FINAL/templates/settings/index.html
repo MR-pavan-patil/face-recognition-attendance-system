@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">College info, email, attendance threshold sab yahan</p>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:20px;max-width:720px">
+
+  <!-- College Info -->
+  <div class="info-card animate-in" style="--delay:0s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-building me-2 text-accent"></i>College Info
+      </h5>
+    </div>
+    <div class="info-card-body" style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div class="field-group">
+        <label class="field-label">College Name</label>
+        <div class="input-wrap">
+          <i class="bi bi-bank input-icon"></i>
+          <input type="text" id="s_college" class="form-field"
+                 value="{{ config.COLLEGE }}" style="padding-left:40px"
+                 placeholder="Your College Name"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="field-group">
+          <label class="field-label">App Name</label>
+          <input type="text" id="s_appname" class="form-field"
+                 value="{{ config.APP_NAME }}"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Version</label>
+          <input type="text" id="s_version" class="form-field"
+                 value="{{ config.APP_VERSION }}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Threshold -->
+  <div class="info-card animate-in" style="--delay:0.05s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-percent me-2 text-accent"></i>Attendance Rules
+      </h5>
+    </div>
+    <div class="info-card-body" style="padding:24px 28px">
+      <div class="field-group">
+        <label class="field-label">
+          Low Attendance Threshold
+          <span style="color:var(--text-muted);font-size:11px;font-weight:400">
+            (is % se kam hoga toh alert aayega)
+          </span>
+        </label>
+        <div style="display:flex;align-items:center;gap:16px">
+          <input type="range" id="s_threshold"
+                 min="50" max="90" step="5"
+                 value="{{ config.LOW_ATTENDANCE_THRESHOLD }}"
+                 oninput="document.getElementById('threshVal').textContent=this.value+'%'"
+                 style="flex:1;accent-color:var(--accent)"/>
+          <span id="threshVal" style="font-family:var(--font-display);font-size:20px;
+            font-weight:800;color:var(--accent);min-width:48px">
+            {{ config.LOW_ATTENDANCE_THRESHOLD }}%
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between;
+             color:var(--text-disabled);font-size:11px;margin-top:4px">
+          <span>50%</span><span>70%</span><span>75%</span><span>80%</span><span>90%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Config -->
+  <div class="info-card animate-in" style="--delay:0.1s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-envelope-fill me-2 text-accent"></i>Gmail Settings
+      </h5>
+      <a href="{{ url_for('email_report.email_alerts_page') }}"
+         style="font-size:12px;color:var(--accent);text-decoration:none">
+        Test Connection →
+      </a>
+    </div>
+    <div class="info-card-body" style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div class="field-group">
+        <label class="field-label">Gmail Address</label>
+        <div class="input-wrap">
+          <i class="bi bi-envelope input-icon"></i>
+          <input type="email" id="s_mail" class="form-field"
+                 value="{{ config.MAIL_USERNAME if config.MAIL_USERNAME != 'your_email@gmail.com' else '' }}"
+                 placeholder="yourname@gmail.com"
+                 style="padding-left:40px"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">
+          App Password
+          <span style="color:var(--text-muted);font-size:11px;font-weight:400">(16 chars, no spaces)</span>
+        </label>
+        <div class="input-wrap">
+          <i class="bi bi-key input-icon"></i>
+          <input type="password" id="s_mailpwd" class="form-field"
+                 value="{{ config.MAIL_PASSWORD if config.MAIL_PASSWORD != 'your_app_password_here' else '' }}"
+                 placeholder="••••••••••••••••"
+                 style="padding-left:40px"
+                 oninput="this.value=this.value.replace(/\s/g,'')"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Password -->
+  <div class="info-card animate-in" style="--delay:0.15s">
+    <div class="info-card-header">
+      <h5 class="info-card-title">
+        <i class="bi bi-shield-lock-fill me-2 text-accent"></i>Admin Credentials
+      </h5>
+    </div>
+    <div class="info-card-body" style="padding:24px 28px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="field-group">
+          <label class="field-label">Username</label>
+          <div class="input-wrap">
+            <i class="bi bi-person input-icon"></i>
+            <input type="text" id="s_adminuser" class="form-field"
+                   value="{{ config.ADMIN_USERNAME }}"
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock input-icon"></i>
+            <input type="password" id="s_adminpwd" class="form-field"
+                   value="{{ config.ADMIN_PASSWORD }}"
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+      </div>
+      <p style="color:var(--amber);font-size:12px;margin-top:10px">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Password change ke baad app restart karo aur dobara login karo.
+      </p>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div style="display:flex;gap:12px">
+    <button onclick="saveAll()" id="saveBtn" class="btn-icon-primary" style="padding:13px 36px">
+      <i class="bi bi-floppy-fill me-2"></i>Save All Settings
+    </button>
+  </div>
+  <div id="saveResult"></div>
+</div>
+
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;
+     display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function saveAll() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+
+  const payload = {
+    COLLEGE                  : document.getElementById('s_college').value.trim(),
+    APP_NAME                 : document.getElementById('s_appname').value.trim(),
+    APP_VERSION              : document.getElementById('s_version').value.trim(),
+    LOW_ATTENDANCE_THRESHOLD : document.getElementById('s_threshold').value,
+    MAIL_USERNAME            : document.getElementById('s_mail').value.trim(),
+    MAIL_PASSWORD            : document.getElementById('s_mailpwd').value.trim(),
+    MAIL_FROM                : document.getElementById('s_mail').value.trim(),
+    ADMIN_USERNAME           : document.getElementById('s_adminuser').value.trim(),
+    ADMIN_PASSWORD           : document.getElementById('s_adminpwd').value.trim(),
+  };
+
+  const res  = await fetch('/settings/api/save', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify(payload),
+  });
+  const data = await res.json();
+
+  const el = document.getElementById('saveResult');
+  if (data.success) {
+    el.innerHTML = `<div style="background:var(--green-soft);border:1px solid rgba(45,212,113,.3);
+      border-radius:var(--radius-sm);padding:13px 18px;color:var(--green);font-weight:600;font-size:13.5px">
+      <i class="bi bi-check-circle-fill me-2"></i>${data.message}
+    </div>`;
+    showToast('Settings saved! ✓', 'success');
+  } else {
+    el.innerHTML = `<div style="background:var(--red-soft);border:1px solid rgba(255,92,92,.3);
+      border-radius:var(--radius-sm);padding:13px 18px;color:var(--red);font-size:13px">
+      <i class="bi bi-x-circle-fill me-2"></i>${data.error}
+    </div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-floppy-fill me-2"></i>Save All Settings';
+}
+
+function showToast(msg, type='success') {
+  const c={success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
+           error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)']};
+  const [bg,bd,tc]=c[type]||c.success;
+  const t=document.createElement('div');
+  t.style.cssText=`background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
+    padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;max-width:280px;box-shadow:var(--shadow-md)`;
+  t.textContent=msg;
+  document.getElementById('toastBox').prepend(t);
+  setTimeout(()=>t.remove(),4000);
+}
+</script>
+{% endblock %}

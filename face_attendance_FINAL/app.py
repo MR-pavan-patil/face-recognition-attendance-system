@@ -26,6 +26,7 @@ def create_app():
     from routes.reports     import reports_bp
     from routes.recognition  import recognition_bp
     from routes.email_report import email_bp
+    from routes.settings    import settings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(students_bp)
@@ -34,6 +35,7 @@ def create_app():
     app.register_blueprint(reports_bp)
     app.register_blueprint(recognition_bp)
     app.register_blueprint(email_bp)
+    app.register_blueprint(settings_bp)
 
     with app.app_context():
         db.create_all()
@@ -81,7 +83,7 @@ def register_routes(app):
         stats = {
             "total_students"        : total,
             "present_today"         : present_today,
-            "absent_today"          : max(total - present_today, 0),
+            "absent"          : max(total - present_today, 0),
             "attendance_percentage" : round(present_today / total * 100, 1) if total > 0 else 0,
             "today_date"            : today.strftime("%B %d, %Y"),
             "day_name"              : today.strftime("%A"),
@@ -107,7 +109,7 @@ def register_routes(app):
         return jsonify({
             "total_students"        : total,
             "present_today"         : present,
-            "absent_today"          : max(total - present, 0),
+            "absent"          : max(total - present, 0),
             "attendance_percentage" : round(present / total * 100, 1) if total > 0 else 0,
         })
 

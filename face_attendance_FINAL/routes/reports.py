@@ -433,3 +433,26 @@ def api_student_stats(student_id):
         "last_seen"   : last_seen,
     })
 
+@reports_bp.route("/api/attendance-pct")
+@login_required
+def api_attendance_pct():
+    """Return attendance % for all active students (for student list page)."""
+    from datetime import date, timedelta
+    today = date.today()
+    start = today - timedelta(days=30)
+
+    students = Student.query.filter_by(is_active=True).all()
+    result   = {}
+    for s in students:
+        cnt = Attendance.query.filter(
+            Attendance.student_id == s.id,
+            Attendance.date >= start,
+            Attendance.status == "Present"
+        ).count()
+        working = sum(
+            1 for i in range(31)
+            if (start + timedelta(days=i)).weekday() < 6
+        )
+        result[s.id] = round(cnt / working * 100, 1) if working > 0 else 0
+    return jsonify(result)
+

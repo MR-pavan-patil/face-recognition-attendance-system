@@ -1,13 +1,6 @@
 """
-routes/attendance.py — Attendance (Final)
-==========================================
-Features:
-- Today + History view
-- Manual mark
-- UNDO attendance (remove record)
-- Date-wise edit (add/remove any date)
+routes/attendance.py — Attendance (Final Clean)
 """
-
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from database import db
 from models import Student, Attendance
@@ -31,12 +24,10 @@ def today_attendance():
         .order_by(Attendance.time_in.desc())
     )
     if search:
-        query = query.filter(
-            db.or_(
-                Student.name.ilike(f"%{search}%"),
-                Student.roll_number.ilike(f"%{search}%"),
-            )
-        )
+        query = query.filter(db.or_(
+            Student.name.ilike(f"%{search}%"),
+            Student.roll_number.ilike(f"%{search}%"),
+        ))
     records = query.paginate(page=page, per_page=20, error_out=False)
 
     total   = Student.query.filter_by(is_active=True).count()
@@ -74,22 +65,47 @@ def history():
     )
     total   = Student.query.filter_by(is_active=True).count()
     present = len(records)
-
     return render_template("attendance/history.html",
                            records=records, selected_date=selected,
                            total=total, present=present,
                            absent=max(total - present, 0),
-                           percentage=round(present / total * 100, 1) if total > 0 else 0,
+                           percentage=round(present / total * 100, 1) if total else 0,
                            active_page="attendance")
 
 
-# ── API: Mark attendance ──────────────────────────────────────
+@attendance_bp.route("/absent")
+@login_required
+def absent_list():
+    date_str = request.args.get("date", "")
+    try:
+        sel = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else date.today()
+    except ValueError:
+        sel = date.today()
+
+    all_students    = Student.query.filter_by(is_active=True).all()
+    present_ids     = {a.student_id for a in
+                       Attendance.query.filter_by(date=sel, status="Present").all()}
+    absent_students = sorted([s for s in all_students if s.id not in present_ids],
+                             key=lambda s: s.name)
+
+    total   = len(all_students)
+    present = len(present_ids)
+    absent  = len(absent_students)
+
+    return render_template("attendance/absent.html",
+                           absent_students=absent_students,
+                           selected_date=sel, today=date.today(),
+                           total=total, present=present, absent=absent,
+                           percentage=round(present / total * 100, 1) if total else 0,
+                           active_page="absent")
+
+
 @attendance_bp.route("/api/mark", methods=["POST"])
 @login_required
 def api_mark():
     data       = request.get_json()
     student_id = data.get("student_id") if data else None
-    mark_date  = data.get("date")  # Optional — default today
+    mark_date  = data.get("date")
 
     if not student_id:
         return jsonify({"success": False, "error": "student_id required"}), 400
@@ -105,38 +121,25 @@ def api_mark():
 
     existing = Attendance.query.filter_by(student_id=student_id, date=att_date).first()
     if existing:
-        return jsonify({
-            "success": False,
-            "status" : "already_marked",
-            "message": f"{student.name} already marked on {att_date.strftime('%d %b')}",
-        })
-
+        return jsonify({"success": False, "status": "already_marked",
+                        "message": f"{student.name} already marked"})
     try:
-        record = Attendance(
-            student_id = student_id,
-            date       = att_date,
-            time_in    = datetime.now().time(),
-            status     = "Present",
-            marked_by  = "Manual",
-        )
+        record = Attendance(student_id=student_id, date=att_date,
+                            time_in=datetime.now().time(),
+                            status="Present", marked_by="Manual")
         db.session.add(record)
         db.session.commit()
-        return jsonify({
-            "success": True,
-            "status" : "marked",
-            "message": f"✓ {student.name} marked present",
-            "time"   : datetime.now().strftime("%I:%M %p"),
-        })
+        return jsonify({"success": True, "status": "marked",
+                        "message": f"✓ {student.name} marked present",
+                        "time": datetime.now().strftime("%I:%M %p")})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# ── API: UNDO / Remove attendance ────────────────────────────
 @attendance_bp.route("/api/undo", methods=["POST"])
 @login_required
 def api_undo():
-    """Remove an attendance record (undo galti se mark)."""
     data          = request.get_json()
     attendance_id = data.get("attendance_id") if data else None
     student_id    = data.get("student_id")
@@ -148,27 +151,23 @@ def api_undo():
         elif student_id and undo_date:
             att_date = datetime.strptime(undo_date, "%Y-%m-%d").date()
             record   = Attendance.query.filter_by(
-                student_id=student_id, date=att_date
-            ).first()
+                student_id=student_id, date=att_date).first()
         else:
             return jsonify({"success": False, "error": "attendance_id or student_id+date required"}), 400
 
         if not record:
-            return jsonify({"success": False, "error": "Attendance record not found"})
+            return jsonify({"success": False, "error": "Record not found"})
 
         student = Student.query.get(record.student_id)
         db.session.delete(record)
         db.session.commit()
-        return jsonify({
-            "success": True,
-            "message": f"✓ Attendance removed for {student.name if student else 'student'}",
-        })
+        return jsonify({"success": True,
+                        "message": f"✓ Removed for {student.name if student else 'student'}"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# ── API: Today JSON ───────────────────────────────────────────
 @attendance_bp.route("/api/today")
 @login_required
 def api_today():
@@ -181,17 +180,9 @@ def api_today():
         .all()
     )
     total = Student.query.filter_by(is_active=True).count()
-    data  = [{
-        "id"         : att.id,
-        "name"       : stu.name,
-        "roll_number": stu.roll_number,
-        "department" : stu.department,
-        "time_in"    : str(att.time_in) if att.time_in else "--",
-        "status"     : att.status,
-        "marked_by"  : att.marked_by,
-    } for att, stu in records]
-    return jsonify({
-        "total"  : total,
-        "present": len(data),
-        "records": data,
-    })
+    data  = [{"id": att.id, "name": stu.name, "roll_number": stu.roll_number,
+               "department": stu.department,
+               "time_in": str(att.time_in) if att.time_in else "--",
+               "status": att.status, "marked_by": att.marked_by}
+             for att, stu in records]
+    return jsonify({"total": total, "present": len(data), "records": data})

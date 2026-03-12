@@ -39,7 +39,7 @@
 
     <a href="{{ url_for('recognition.index') }}"
        class="nav-link-item {% if active_page == 'recognition' %}active{% endif %}">
-      <i class="bi bi-person-bounding-box"></i><span>Live Recognition</span>
+      <i class="bi bi-camera-video-fill"></i><span>Live Recognition</span>
       {% if active_page == 'recognition' %}<span class="nav-active-dot"></span>{% endif %}
     </a>
 
@@ -49,6 +49,12 @@
        class="nav-link-item {% if active_page == 'attendance' %}active{% endif %}">
       <i class="bi bi-calendar-check-fill"></i><span>Attendance</span>
       {% if active_page == 'attendance' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <a href="{{ url_for('attendance.absent_list') }}"
+       class="nav-link-item {% if active_page == 'absent' %}active{% endif %}">
+      <i class="bi bi-person-x-fill"></i><span>Absent List</span>
+      {% if active_page == 'absent' %}<span class="nav-active-dot"></span>{% endif %}
     </a>
 
     <a href="{{ url_for('reports.summary') }}"

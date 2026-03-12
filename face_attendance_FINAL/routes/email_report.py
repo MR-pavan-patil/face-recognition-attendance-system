@@ -28,7 +28,9 @@ email_bp = Blueprint("email_report", __name__, url_prefix="/email")
 @login_required
 def email_alerts_page():
     """Email & Alerts page."""
-    return render_template("reports/email_alerts.html", active_page="email")
+    from config import Config
+    return render_template("reports/email_alerts.html",
+                           active_page="email", config=Config)
 
 # ─────────────────────────────────────────────────────────────
 # HELPER: Get attendance stats for all students
@@ -210,22 +212,29 @@ def send_report_email():
     except smtplib.SMTPAuthenticationError:
         return jsonify({
             "success": False,
-            "error"  : "Gmail authentication failed! Check App Password in config.py"
+            "error"  : "AUTH_FAILED"
         })
+    except smtplib.SMTPConnectError:
+        return jsonify({"success": False, "error": "CONNECT_FAILED"})
+    except smtplib.SMTPException as e:
+        return jsonify({"success": False, "error": f"SMTP_ERROR: {str(e)}"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
 
 def _send_email(cfg, to_email, subject, body_html, csv_data, filename):
     """Send email with CSV attachment."""
+    # Fix: Strip spaces from app password (common mistake)
+    username = cfg["MAIL_USERNAME"].strip()
+    password = cfg["MAIL_PASSWORD"].strip().replace(" ", "")
+
     msg = MIMEMultipart("mixed")
-    msg["From"]    = cfg["MAIL_FROM"]
+    msg["From"]    = username
     msg["To"]      = to_email
     msg["Subject"] = subject
 
     msg.attach(MIMEText(body_html, "html"))
 
-    # Attach CSV
     if csv_data:
         part = MIMEBase("application", "octet-stream")
         part.set_payload(csv_data.encode("utf-8"))
@@ -234,10 +243,13 @@ def _send_email(cfg, to_email, subject, body_html, csv_data, filename):
                         f'attachment; filename="{filename}"')
         msg.attach(part)
 
-    context = ssl.create_default_context()
+    # Windows fix: ssl.create_default_context() fails on some systems
+    # Use plain starttls() without context — works everywhere
     with smtplib.SMTP(cfg["MAIL_SERVER"], cfg["MAIL_PORT"]) as server:
-        server.starttls(context=context)
-        server.login(cfg["MAIL_USERNAME"], cfg["MAIL_PASSWORD"])
+        server.ehlo()
+        server.starttls()   # No context needed — simpler + works on Windows
+        server.ehlo()
+        server.login(username, password)
         server.sendmail(cfg["MAIL_FROM"], to_email, msg.as_string())
 
 
@@ -454,3 +466,90 @@ def _build_summary_pdf_html(stats, today, days):
   </table>
   <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:24px">FaceAttend — BCA Final Year Project</p>
 </body></html>"""
+
+# ─────────────────────────────────────────────────────────────
+# TEST CONNECTION + SAVE CONFIG
+# ─────────────────────────────────────────────────────────────
+@email_bp.route("/api/test-connection", methods=["POST"])
+@login_required
+def test_connection():
+    """Test Gmail connection without sending email."""
+    import smtplib, ssl
+    data     = request.get_json()
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip().replace(" ", "")
+
+    if not username or not password:
+        return jsonify({"success": False, "error": "Email aur password dono required hain"})
+    if "@" not in username:
+        return jsonify({"success": False, "error": "Valid Gmail address likho"})
+    if len(password) < 16:
+        return jsonify({"success": False,
+                        "error": "App Password 16 characters ka hota hai — spaces hatao"})
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as s:
+            s.ehlo()
+            s.starttls()   # Windows fix: no ssl context
+            s.ehlo()
+            s.login(username, password)
+        return jsonify({"success": True,
+                        "message": f"✓ Gmail connected! ({username})"})
+    except smtplib.SMTPAuthenticationError:
+        return jsonify({
+            "success": False,
+            "error": (
+                "Authentication failed! Sambhavit reasons:\n"
+                "1. App Password galat hai\n"
+                "2. 2-Step Verification OFF hai\n"
+                "3. Spaces include kar liye App Password mein"
+            )
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@email_bp.route("/api/save-config", methods=["POST"])
+@login_required
+def save_config():
+    """Save email config to config.py directly."""
+    data     = request.get_json()
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip().replace(" ", "")
+
+    if not username or not password:
+        return jsonify({"success": False, "error": "Email aur password required"})
+
+    try:
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "config.py"
+        )
+        with open(config_path, "r") as f:
+            lines = f.readlines()
+
+        new_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("MAIL_USERNAME"):
+                new_lines.append(
+                    f'    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "{username}")\n'
+                )
+            elif stripped.startswith("MAIL_PASSWORD"):
+                new_lines.append(
+                    f'    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "{password}")\n'
+                )
+            elif stripped.startswith("MAIL_FROM"):
+                new_lines.append(
+                    f'    MAIL_FROM     = os.environ.get("MAIL_USERNAME", "{username}")\n'
+                )
+            else:
+                new_lines.append(line)
+
+        with open(config_path, "w") as f:
+            f.writelines(new_lines)
+
+        return jsonify({"success": True,
+                        "message": "✓ Config saved! App restart karo."})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+

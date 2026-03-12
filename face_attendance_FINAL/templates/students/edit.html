@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Edit — {{ student.name }}{% endblock %}
+{% block breadcrumb %}Students / Edit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Student</h1>
+    <p class="page-subtitle"><span class="code-badge">{{ student.roll_number }}</span></p>
+  </div>
+  <a href="{{ url_for('students.view_student', student_id=student.id) }}"
+     class="btn-icon-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Back
+  </a>
+</div>
+
+<div class="info-card animate-in" style="--delay:0.05s;max-width:680px;margin:0 auto">
+  <div class="info-card-header">
+    <h5 class="info-card-title">
+      <i class="bi bi-pencil-fill me-2 text-accent"></i>Update Profile
+    </h5>
+  </div>
+  <div class="info-card-body" style="padding:28px 32px">
+    <form method="POST">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="edit-grid">
+
+        <div class="field-group" style="grid-column:1/-1">
+          <label class="field-label">Full Name *</label>
+          <div class="input-wrap">
+            <i class="bi bi-person input-icon"></i>
+            <input type="text" name="name" class="form-field"
+                   value="{{ student.name }}" required
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Email *</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope input-icon"></i>
+            <input type="email" name="email" class="form-field"
+                   value="{{ student.email }}" required
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Phone</label>
+          <div class="input-wrap">
+            <i class="bi bi-phone input-icon"></i>
+            <input type="text" name="phone" class="form-field"
+                   value="{{ student.phone or '' }}"
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Department *</label>
+          <div class="input-wrap">
+            <i class="bi bi-building input-icon"></i>
+            <input type="text" name="department" class="form-field"
+                   value="{{ student.department }}" required
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Year *</label>
+          <select name="year" class="form-field">
+            {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
+            <option value="{{ y }}" {{ 'selected' if student.year == y }}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field-group" style="grid-column:1/-1">
+          <label class="field-label">Section</label>
+          <div class="input-wrap">
+            <i class="bi bi-collection input-icon"></i>
+            <input type="text" name="section" class="form-field"
+                   value="{{ student.section or '' }}" placeholder="A / B / C"
+                   style="padding-left:40px"/>
+          </div>
+        </div>
+
+        <!-- Roll number — read only -->
+        <div class="field-group" style="grid-column:1/-1">
+          <label class="field-label">
+            Roll Number
+            <span style="color:var(--text-muted);font-size:11px;font-weight:400">
+              (change nahi ho sakta)
+            </span>
+          </label>
+          <div class="input-wrap">
+            <i class="bi bi-hash input-icon"></i>
+            <input type="text" class="form-field" value="{{ student.roll_number }}"
+                   disabled style="padding-left:40px;opacity:.5;cursor:not-allowed"/>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:24px">
+        <button type="submit" class="btn-icon-primary" style="padding:13px 32px">
+          <i class="bi bi-check-lg me-2"></i>Save Changes
+        </button>
+        <a href="{{ url_for('students.view_student', student_id=student.id) }}"
+           class="btn-icon-secondary" style="padding:13px 24px">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+@media(max-width:600px){
+  .edit-grid{grid-template-columns:1fr!important}
+  .edit-grid .field-group{grid-column:1!important}
+}
+</style>
+{% endblock %}
