@@ -41,7 +41,7 @@ class Config:
 
     # ── App Info ─────────────────────────────────────────────
     APP_NAME    = "FaceAttend"
-    APP_VERSION = "Day 9 — Final"
+    APP_VERSION = "v1.0.0"
     COLLEGE     = "Your College Name"
 
     # ── Admin Login ──────────────────────────────────────────────

@@ -8,7 +8,7 @@
     <h1 class="page-title">Live Face Recognition</h1>
     <p class="page-subtitle">
       <i class="bi bi-camera-video me-1" style="color:var(--accent)"></i>
-      Website se seedha attendance — camera.py ki zaroorat nahi!
+      Browser-based face recognition — no external script needed!
     </p>
   </div>
   <a href="{{ url_for('attendance.today_attendance') }}" class="btn-icon-secondary">
@@ -23,8 +23,8 @@
     <div>
       <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:6px">Face encodings not ready!</div>
       <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">
-        Pehle student photos capture karo. Capture ke baad <strong>Done</strong> button dabao — auto encoding ho jaati hai.<br>
-        Ya CMD mein: <code style="color:var(--accent)">python encode_faces.py</code>
+        First capture student photos. After capture, click <strong>Done</strong> — encoding runs automatically.<br>
+        Or run manually: <code style="color:var(--accent)">python encode_faces.py</code>
       </p>
       <a href="{{ url_for('students.list_students') }}" class="btn-icon-primary">
         <i class="bi bi-camera me-2"></i>Go to Students
@@ -91,7 +91,7 @@
       <i class="bi bi-camera-video-off" style="font-size:52px;color:var(--text-disabled)"></i>
       <p style="color:var(--text-secondary);font-size:15px;font-weight:600;margin:0">Camera not started</p>
       <p style="color:var(--text-muted);font-size:13px;margin:0;text-align:center;padding:0 20px">
-        Click <b>Start</b> → Allow camera permission → Apna face dikhao
+        Click <b>Start</b> → Allow camera permission → Show your face
       </p>
     </div>
   </div>

@@ -59,12 +59,12 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>#</th>
+          <th class="hide-mobile">#</th>
           <th>Student</th>
           <th>Roll Number</th>
-          <th>Department</th>
+          <th class="hide-mobile">Department</th>
           <th>Year</th>
-          <th>30-Day %</th>
+          <th class="hide-mobile">30-Day %</th>
           <th>Dataset</th>
           <th>Actions</th>
         </tr>
@@ -72,7 +72,7 @@
       <tbody>
         {% for student in students.items %}
         <tr id="row-{{ student.id }}">
-          <td class="row-num">{{ loop.index + ((students.page-1)*10) }}</td>
+          <td class="row-num hide-mobile">{{ loop.index + ((students.page-1)*10) }}</td>
           <td>
             <div class="student-cell">
               <div class="student-avatar">{{ student.name[0].upper() }}</div>
@@ -83,9 +83,9 @@
             </div>
           </td>
           <td><span class="code-badge">{{ student.roll_number }}</span></td>
-          <td>{{ student.department }}</td>
+          <td class="hide-mobile">{{ student.department }}</td>
           <td><span class="year-tag">{{ student.year }}</span></td>
-          <td>
+          <td class="hide-mobile">
             <div style="width:76px">
               <div style="font-size:12px;font-weight:700;margin-bottom:3px"
                    id="pct-{{ student.id }}" style="color:var(--text-muted)">—</div>
@@ -177,8 +177,7 @@
 </div>
 
 <!-- Delete confirm modal -->
-<div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;
-     display:none;align-items:center;justify-content:center">
+<div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
   <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-xl);
               padding:36px;max-width:400px;width:90%;box-shadow:var(--shadow-xl)">
     <h5 style="font-family:var(--font-display);color:var(--text-primary);margin-bottom:12px">Remove Student?</h5>

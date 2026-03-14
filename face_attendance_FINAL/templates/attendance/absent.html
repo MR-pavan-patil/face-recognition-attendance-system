@@ -117,8 +117,8 @@
   {% else %}
   <div class="empty-state">
     <i class="bi bi-patch-check-fill" style="color:var(--green)"></i>
-    <h5 style="color:var(--green)">Sab present hain!</h5>
-    <p>{{ selected_date.strftime('%d %B %Y') }} ko koi absent nahi.</p>
+    <h5 style="color:var(--green)">Everyone is present!</h5>
+    <p>{{ selected_date.strftime('%d %B %Y') }} has no absent students.</p>
   </div>
   {% endif %}
 </div>
@@ -168,7 +168,7 @@ async function markPresent(studentId, name) {
 }
 
 async function markAllPresent() {
-  if (!confirm('Sabhi absent students ko present mark karein?')) return;
+  if (!confirm('Mark all absent students as present?')) return;
   const rows = document.querySelectorAll('[id^="arow-"]');
   const btn  = document.getElementById('markAllBtn');
   btn.disabled = true;

@@ -1,218 +1,410 @@
-{% extends "base.html" %}
-{% block title %}Email & Alerts{% endblock %}
-{% block breadcrumb %}Reports / Email & Alerts{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Email & Alerts{% endblock %} {% block breadcrumb %}Reports / Email & Alerts{% endblock %} {% block content %}
 <div class="page-header">
-  <div>
-    <h1 class="page-title">Email Reports & Alerts</h1>
-    <p class="page-subtitle"><i class="bi bi-envelope-fill me-1" style="color:var(--accent)"></i>Report bhejo + low attendance dekho</p>
-  </div>
-  <a href="{{ url_for('reports.summary') }}" class="btn-icon-secondary">
-    <i class="bi bi-arrow-left me-2"></i>Reports
-  </a>
-</div>
-
-<!-- Config status banner -->
-{% set email_set = config.MAIL_USERNAME != 'your_email@gmail.com' %}
-{% if not email_set %}
-<div class="info-card animate-in mb-4" style="border-color:rgba(255,179,71,.4)">
-  <div class="info-card-body" style="padding:18px 24px;display:flex;gap:14px;align-items:flex-start">
-    <i class="bi bi-gear-fill" style="font-size:26px;color:var(--amber);flex-shrink:0;margin-top:2px"></i>
     <div>
-      <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:8px">
-        Gmail setup required — config.py mein 2 lines change karo
-      </div>
-      <div style="background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-sm);
-           padding:14px 18px;font-family:monospace;font-size:13px;color:var(--text-secondary);margin-bottom:8px">
-        <span style="color:var(--text-muted)"># config.py</span><br>
-        MAIL_USERNAME = <span style="color:var(--green)">"tumhara@gmail.com"</span><br>
-        MAIL_PASSWORD = <span style="color:var(--green)">"abcdefghijklmnop"</span>
-        <span style="color:var(--text-disabled);font-size:11px"> &nbsp;← Gmail App Password (16 chars)</span>
-      </div>
-      <div style="font-size:12.5px;color:var(--text-muted)">
-        App Password:
-        <a href="https://myaccount.google.com/security" target="_blank" style="color:var(--accent)">
-          myaccount.google.com/security
-        </a>
-        → 2-Step Verification ON → App Passwords → Create
-      </div>
+        <h1 class="page-title">Email Reports & Alerts</h1>
+        <p class="page-subtitle">
+            <i class="bi bi-envelope-fill me-1" style="color:var(--accent)"></i> Configure Gmail, send reports, monitor low attendance
+        </p>
     </div>
-  </div>
+    <a href="{{ url_for('reports.summary') }}" class="btn-icon-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Reports
+    </a>
 </div>
-{% else %}
-<div class="mini-stats animate-in mb-4" style="--delay:0s">
-  <div class="mini-stat">
-    <i class="bi bi-envelope-check-fill" style="color:var(--green)"></i>
-    <div><span class="ms-val" style="font-size:13px">{{ config.MAIL_USERNAME }}</span><span class="ms-lbl">Gmail Configured</span></div>
-  </div>
-</div>
-{% endif %}
 
-<div class="responsive-grid-2 animate-in mb-4" style="--delay:0.05s">
-
-  <!-- Send Email -->
-  <div class="info-card">
-    <div class="info-card-header">
-      <h5 class="info-card-title"><i class="bi bi-send-fill me-2 text-accent"></i>Send Report</h5>
-    </div>
+<!-- STEP 1: Gmail Setup -->
+<div class="info-card animate-in mb-4" style="--delay:0s" id="gmailSetupCard">
+    <!-- <div class="info-card-header">
+        <h5 class="info-card-title">
+            <span style="display:inline-flex;align-items:center;justify-content:center;
+        width:26px;height:26px;border-radius:50%;background:var(--amber-soft);
+        color:var(--amber);font-size:13px;margin-right:8px;font-weight:800">1</span> Gmail Setup
+        </h5>
+        <span id="setupStatus" style="font-size:12px;color:var(--text-muted)">Not configured</span>
+    </div> -->
     <div class="info-card-body" style="padding:20px 24px">
-      <div class="field-group mb-3">
-        <label class="field-label">Send To</label>
-        <div class="input-wrap">
-          <i class="bi bi-envelope-at input-icon"></i>
-          <input type="email" id="toEmail" class="form-field"
-                 placeholder="teacher@college.edu"
-                 style="padding-left:40px"/>
-        </div>
-      </div>
-      <div class="field-group mb-4">
-        <label class="field-label">Report Type</label>
-        <div style="display:flex;flex-direction:column;gap:8px" id="rtypeGroup">
-          {% for val, label, icon, color in [
-            ('daily','Aaj ka Report — present students','calendar-day','var(--accent)'),
-            ('monthly','Monthly Summary — last 30 days','calendar-month','var(--green)'),
-            ('low_attendance','Low Attendance Alert — below 75%','exclamation-triangle-fill','var(--red)')
-          ] %}
-          <label onclick="selType('{{val}}')" id="rl-{{val}}"
-                 style="display:flex;align-items:center;gap:12px;padding:11px 16px;
-                 background:var(--bg-elevated);border:2px solid {% if loop.first %}var(--accent){% else %}var(--border-color){% endif %};
-                 border-radius:var(--radius-md);cursor:pointer;transition:all .2s">
-            <i class="bi bi-{{icon}}" style="color:{{color}};font-size:18px;flex-shrink:0"></i>
-            <div>
-              <div style="font-weight:600;color:var(--text-primary);font-size:13px">{{label}}</div>
+
+        <!-- Input Fields -->
+        <!-- <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" class="responsive-grid-email">
+            <div class="field-group">
+                <label class="field-label">Gmail Address</label>
+                <div class="input-wrap">
+                    <i class="bi bi-envelope input-icon"></i>
+                    <input type="email" id="cfgEmail" class="form-field" placeholder="your@gmail.com" style="padding-left:40px" value="{{ config.MAIL_USERNAME if '@' in (config.MAIL_USERNAME or '') else '' }}" />
+                </div>
             </div>
-            <i class="bi bi-check-circle-fill chk-{{val}}" style="margin-left:auto;color:var(--accent);{% if not loop.first %}display:none{% endif %}"></i>
-          </label>
-          {% endfor %}
+            <div class="field-group">
+                <label class="field-label">
+          App Password
+          <span style="color:var(--text-muted);font-size:11px;font-weight:400">
+            (remove spaces — 16 chars)
+          </span>
+        </label>
+                <div class="input-wrap" style="position:relative">
+                    <i class="bi bi-key input-icon"></i>
+                    <input type="password" id="cfgPassword" class="form-field" placeholder="abcdefghijklmnop" style="padding-left:40px;padding-right:44px" oninput="cleanPassword(this)" />
+                    <button onclick="togglePwd()" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                         background:none;border:none;color:var(--text-muted);cursor:pointer;
+                         font-size:16px;padding:2px">
+            <i class="bi bi-eye" id="eyeIcon"></i>
+          </button>
+                </div>
+            </div>
+        </div> -->
+
+        <!-- Buttons -->
+        <!-- <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button onclick="testConnection()" id="testBtn" class="btn-icon-secondary" style="padding:10px 22px">
+        <i class="bi bi-wifi me-2"></i>Test Connection
+      </button>
+            <button onclick="saveConfig()" id="saveBtn" class="btn-icon-primary" style="padding:10px 22px">
+        <i class="bi bi-floppy-fill me-2"></i>Save Config
+      </button>
+        </div> -->
+        <div id="testResult" style="margin-top:14px"></div>
+    </div>
+</div>
+
+<!-- STEP 2: Send Report + PDF Download -->
+<div class="responsive-grid-2 animate-in mb-4" style="--delay:0.1s">
+
+    <div class="info-card">
+        <div class="info-card-header">
+            <h5 class="info-card-title">
+                <span style="display:inline-flex;align-items:center;justify-content:center;
+          width:26px;height:26px;border-radius:50%;background:var(--accent-soft);
+          color:var(--accent);font-size:13px;margin-right:8px;font-weight:800">2</span> Send Report Email
+            </h5>
         </div>
-      </div>
-      <button onclick="sendEmail()" id="sendBtn" class="btn-icon-primary" style="width:100%;padding:13px">
+        <div class="info-card-body" style="padding:20px 24px">
+            <div class="field-group mb-3">
+                <label class="field-label">Send To</label>
+                <div class="input-wrap">
+                    <i class="bi bi-envelope-at input-icon"></i>
+                    <input type="email" id="toEmail" class="form-field" placeholder="teacher@college.edu or your own email" style="padding-left:40px" />
+                </div>
+            </div>
+
+            <div class="field-group mb-4">
+                <label class="field-label">Report Type</label>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    <label class="radio-option" onclick="selectReport(this,'daily')">
+            <input type="radio" name="rtype" value="daily" checked style="display:none"/>
+            <div class="radio-indicator" id="ri-daily" style="border-color:var(--accent);background:var(--accent)">
+              <i class="bi bi-check-lg" style="color:#fff;font-size:11px"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);font-size:13.5px">
+                <i class="bi bi-calendar-day me-1" style="color:var(--accent)"></i>Today's Report
+              </div>
+              <div style="color:var(--text-muted);font-size:12px">Today's present students + time</div>
+            </div>
+          </label>
+
+                    <label class="radio-option" onclick="selectReport(this,'monthly')">
+            <input type="radio" name="rtype" value="monthly" style="display:none"/>
+            <div class="radio-indicator" id="ri-monthly">
+              <i class="bi bi-check-lg" style="color:#fff;font-size:11px;opacity:0"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);font-size:13.5px">
+                <i class="bi bi-calendar-month me-1" style="color:var(--green)"></i>Monthly Summary
+              </div>
+              <div style="color:var(--text-muted);font-size:12px">Last 30 days — all students</div>
+            </div>
+          </label>
+
+                    <label class="radio-option" onclick="selectReport(this,'low_attendance')" style="border-color:rgba(255,92,92,.2)">
+            <input type="radio" name="rtype" value="low_attendance" style="display:none"/>
+            <div class="radio-indicator" id="ri-low" style="border-color:rgba(255,92,92,.4)">
+              <i class="bi bi-check-lg" style="color:#fff;font-size:11px;opacity:0"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);font-size:13.5px">
+                <i class="bi bi-exclamation-triangle-fill me-1" style="color:var(--red)"></i>Low Attendance Alert
+              </div>
+              <div style="color:var(--text-muted);font-size:12px">Only students below 75%</div>
+            </div>
+          </label>
+                </div>
+            </div>
+
+            <button onclick="sendEmail()" id="sendBtn" class="btn-icon-primary" style="width:100%;padding:13px">
         <i class="bi bi-send-fill me-2"></i>Send Email
       </button>
-      <div id="sendResult" style="margin-top:12px"></div>
+            <div id="sendResult" style="margin-top:12px"></div>
+        </div>
     </div>
-  </div>
 
-  <!-- PDF Download -->
-  <div class="info-card">
-    <div class="info-card-header">
-      <h5 class="info-card-title">
-        <i class="bi bi-file-earmark-pdf-fill me-2" style="color:var(--red)"></i>Download PDF
-      </h5>
-    </div>
-    <div class="info-card-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:12px">
-      <a href="{{ url_for('email_report.summary_pdf', period=30) }}"
-         style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+    <!-- PDF Download -->
+    <div class="info-card">
+        <div class="info-card-header">
+            <h5 class="info-card-title">
+                <span style="display:inline-flex;align-items:center;justify-content:center;
+          width:26px;height:26px;border-radius:50%;background:var(--red-soft);
+          color:var(--red);font-size:13px;margin-right:8px;font-weight:800">3</span> Download PDF
+            </h5>
+        </div>
+        <div class="info-card-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+            <a href="{{ url_for('email_report.summary_pdf', period=30) }}" style="display:flex;align-items:center;gap:14px;padding:16px 18px;
                 background:var(--bg-elevated);border:1px solid var(--border-color);
-                border-radius:var(--radius-md);text-decoration:none;transition:border-color .2s"
-         onmouseover="this.style.borderColor='var(--red)'"
-         onmouseout="this.style.borderColor='var(--border-color)'">
-        <i class="bi bi-people-fill" style="font-size:26px;color:var(--accent);flex-shrink:0"></i>
-        <div>
-          <div style="font-weight:700;color:var(--text-primary);font-size:13.5px">All Students PDF</div>
-          <div style="color:var(--text-muted);font-size:12px;margin-top:2px">Last 30 days summary</div>
-        </div>
-        <i class="bi bi-download" style="margin-left:auto;color:var(--text-muted)"></i>
-      </a>
+                border-radius:var(--radius-md);text-decoration:none;transition:all .2s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                <i class="bi bi-file-earmark-pdf-fill" style="font-size:28px;color:var(--red);flex-shrink:0"></i>
+                <div>
+                    <div style="font-weight:700;color:var(--text-primary);font-size:13.5px">All Students Summary</div>
+                    <div style="color:var(--text-muted);font-size:12px;margin-top:3px">Last 30 days — full report</div>
+                </div>
+                <i class="bi bi-download" style="margin-left:auto;color:var(--text-muted)"></i>
+            </a>
 
-      <div style="border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden">
-        <div style="padding:10px 14px;background:var(--bg-elevated);border-bottom:1px solid var(--border-color);
-             font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px">
-          <i class="bi bi-person-fill me-1" style="color:var(--green)"></i>Individual Student PDF
+            <div style="border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden">
+                <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);
+             background:var(--bg-elevated);font-size:12px;font-weight:700;
+             color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px">
+                    <i class="bi bi-person-fill me-2" style="color:var(--green)"></i>Student PDF
+                </div>
+                <div style="padding:10px 12px;border-bottom:1px solid var(--border-color)">
+                    <div class="input-wrap">
+                        <i class="bi bi-search input-icon" style="font-size:12px"></i>
+                        <input type="text" id="pdfSearch" class="form-field" placeholder="Search student..." oninput="filterPdf(this.value)" style="padding-left:36px;height:36px;font-size:13px" />
+                    </div>
+                </div>
+                <div id="pdfList" style="max-height:220px;overflow-y:auto">
+                    <div style="padding:20px;text-align:center;color:var(--text-disabled);font-size:13px">
+                        <i class="bi bi-hourglass-split" style="display:block;margin-bottom:6px"></i> Loading students...
+                    </div>
+                </div>
+            </div>
         </div>
-        <div style="padding:8px 10px;border-bottom:1px solid var(--border-color)">
-          <div class="input-wrap">
-            <i class="bi bi-search input-icon" style="font-size:12px"></i>
-            <input type="text" id="pdfSearch" class="form-field" placeholder="Student dhundho..."
-                   oninput="filterPdf(this.value)"
-                   style="padding-left:34px;height:34px;font-size:12.5px"/>
-          </div>
-        </div>
-        <div id="pdfList" style="max-height:210px;overflow-y:auto">
-          <div style="padding:18px;text-align:center;color:var(--text-disabled);font-size:13px">Loading...</div>
-        </div>
-      </div>
     </div>
-  </div>
 </div>
 
-<!-- Low Attendance Table -->
-<div class="info-card animate-in" style="--delay:0.1s">
-  <div class="info-card-header" style="background:rgba(255,92,92,.04)">
-    <h5 class="info-card-title" style="color:var(--red)">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>Low Attendance
-      <span id="lowBadge" style="background:var(--red);color:#fff;border-radius:20px;
-        padding:2px 10px;font-size:11px;margin-left:8px">...</span>
-    </h5>
-    <button onclick="loadLow()" class="btn-icon-secondary" style="padding:6px 14px">
-      <i class="bi bi-arrow-clockwise"></i>
+<!-- Low Attendance Alert -->
+<div class="info-card animate-in" style="--delay:0.2s">
+    <div class="info-card-header" style="background:rgba(255,92,92,.04)">
+        <h5 class="info-card-title" style="color:var(--red)">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> Low Attendance Alert
+            <span id="lowBadge" style="background:var(--red);color:#fff;border-radius:20px;
+        padding:2px 10px;font-size:11px;margin-left:8px;font-weight:700">...</span>
+        </h5>
+        <button onclick="loadLow()" class="btn-icon-secondary" style="padding:6px 14px">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
     </button>
-  </div>
-  <div id="lowTable"><div style="padding:30px;text-align:center;color:var(--text-muted)">Loading...</div></div>
+    </div>
+    <div id="lowTable"></div>
 </div>
 
-<div id="toastBox" style="position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
-{% endblock %}
+<div id="toastBox" style="position:fixed;bottom:28px;right:28px;
+     display:flex;flex-direction:column;gap:10px;z-index:9999"></div>
 
-{% block extra_js %}
-<script>
-let allStudents = [], selType_ = 'daily';
-window.addEventListener('load', () => { loadStudents(); loadLow(); });
-
-function selType(t) {
-  selType_ = t;
-  ['daily','monthly','low_attendance'].forEach(v => {
-    const lbl = document.getElementById('rl-' + v);
-    const chk = document.querySelector('.chk-' + v);
-    if (!lbl) return;
-    const isActive = v === t;
-    const colors = {daily:'var(--accent)', monthly:'var(--green)', low_attendance:'var(--red)'};
-    lbl.style.borderColor = isActive ? colors[v] : 'var(--border-color)';
-    if (chk) { chk.style.display = isActive ? 'inline' : 'none'; chk.style.color = colors[v]; }
-  });
-}
-
-async function sendEmail() {
-  const email = document.getElementById('toEmail').value.trim();
-  if (!email) { showToast('To email bharo!', 'error'); return; }
-  const btn = document.getElementById('sendBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
-  try {
-    const res  = await fetch('/email/send', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({to_email: email, type: selType_})
-    });
-    const data = await res.json();
-    if (data.success) {
-      showResult('sendResult', '✓ ' + data.message, 'success');
-      showToast(data.message, 'success');
-    } else {
-      let msg = data.error;
-      if (msg === 'AUTH_FAILED') msg = 'Gmail auth failed — config.py mein MAIL_PASSWORD check karo';
-      if (msg === 'CONNECT_FAILED') msg = 'Gmail se connect nahi hua — internet check karo';
-      showResult('sendResult', msg, 'error');
+<style>
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all .2s;
+        user-select: none;
     }
-  } catch(e) { showResult('sendResult', 'Network error: ' + e.message, 'error'); }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Send Email';
-}
+    
+    .radio-option:hover {
+        border-color: var(--border-accent);
+    }
+    
+    .radio-indicator {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all .2s;
+    }
+    
+    @media(max-width:600px) {
+        .responsive-grid-email {
+            grid-template-columns: 1fr!important
+        }
+    }
+</style>
+{% endblock %} {% block extra_js %}
+<script>
+    let allStudents = [];
+    let selectedType = 'daily';
 
-async function loadStudents() {
-  const res = await fetch('/students/api/all');
-  allStudents = await res.json();
-  renderPdf(allStudents);
-}
-function filterPdf(q) {
-  renderPdf(q.length < 1 ? allStudents
-    : allStudents.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) ||
-        s.roll_number.toLowerCase().includes(q.toLowerCase())));
-}
-function renderPdf(list) {
-  const el = document.getElementById('pdfList');
-  if (!list.length) { el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px">No students</div>'; return; }
-  el.innerHTML = list.slice(0,20).map(s => `
+    window.addEventListener('load', () => {
+        loadStudents();
+        loadLow();
+    });
+
+    function cleanPassword(el) {
+        const pos = el.selectionStart;
+        const cleaned = el.value.replace(/\s/g, '');
+        if (cleaned !== el.value) {
+            el.value = cleaned;
+            el.setSelectionRange(pos - 1, pos - 1);
+        }
+    }
+
+    function togglePwd() {
+        const inp = document.getElementById('cfgPassword');
+        const ico = document.getElementById('eyeIcon');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            ico.className = 'bi bi-eye-slash';
+        } else {
+            inp.type = 'password';
+            ico.className = 'bi bi-eye';
+        }
+    }
+
+    async function testConnection() {
+        const email = document.getElementById('cfgEmail').value.trim();
+        const pwd = document.getElementById('cfgPassword').value.trim().replace(/\s/g, '');
+        if (!email || !pwd) {
+            showResult('testResult', 'Please enter Email and App Password!', 'error');
+            return;
+        }
+        if (pwd.length < 16) {
+            showResult('testResult', `App Password is only ${pwd.length} chars — must be 16. Did you include spaces?`, 'error');
+            return;
+        }
+        const btn = document.getElementById('testBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Testing...';
+        document.getElementById('testResult').innerHTML = '';
+        try {
+            const res = await fetch('/email/api/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: email,
+                    password: pwd
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showResult('testResult', data.message, 'success');
+                showToast('Gmail connected! ✓', 'success');
+                document.getElementById('setupStatus').textContent = '✓ Connected';
+                document.getElementById('setupStatus').style.color = 'var(--green)';
+            } else {
+                showResult('testResult', data.error || 'Connection failed', 'error');
+            }
+        } catch (e) {
+            showResult('testResult', 'Network error: ' + e.message, 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-wifi me-2"></i>Test Connection';
+    }
+
+    async function saveConfig() {
+        const email = document.getElementById('cfgEmail').value.trim();
+        const pwd = document.getElementById('cfgPassword').value.trim().replace(/\s/g, '');
+        if (!email || !pwd) {
+            showResult('testResult', 'Please enter email and password!', 'error');
+            return;
+        }
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+        const res = await fetch('/email/api/save-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: email,
+                password: pwd
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showResult('testResult', data.message + ' (Restart the app in CMD)', 'success');
+            showToast('Config saved! ✓', 'success');
+        } else {
+            showResult('testResult', data.error, 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-floppy-fill me-2"></i>Save Config';
+    }
+
+    function selectReport(el, type) {
+        selectedType = type;
+        ['daily', 'monthly', 'low'].forEach(t => {
+            const ri = document.getElementById('ri-' + t);
+            if (!ri) return;
+            ri.style.background = 'transparent';
+            ri.style.borderColor = 'var(--border-color)';
+            ri.querySelector('i').style.opacity = '0';
+        });
+        const active = document.getElementById('ri-' + (type === 'low_attendance' ? 'low' : type));
+        if (active) {
+            active.style.background = type === 'low_attendance' ? 'var(--red)' : 'var(--accent)';
+            active.style.borderColor = type === 'low_attendance' ? 'var(--red)' : 'var(--accent)';
+            active.querySelector('i').style.opacity = '1';
+        }
+    }
+
+    async function sendEmail() {
+        const email = document.getElementById('toEmail').value.trim();
+        if (!email) {
+            showToast('Please enter recipient email!', 'error');
+            return;
+        }
+        const btn = document.getElementById('sendBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
+        const res = await fetch('/email/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                to_email: email,
+                type: selectedType
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showResult('sendResult', data.message, 'success');
+            showToast(data.message, 'success');
+        } else {
+            let msg = data.error;
+            if (msg === 'AUTH_FAILED') msg = 'Gmail auth failed! Please run "Test Connection" in Step 1 first.';
+            if (msg === 'CONNECT_FAILED') msg = 'Could not connect to Gmail server. Check your internet connection.';
+            showResult('sendResult', msg, 'error');
+            showToast('Email send failed!', 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Send Email';
+    }
+
+    async function loadStudents() {
+        const res = await fetch('/students/api/all');
+        allStudents = await res.json();
+        renderPdf(allStudents);
+    }
+
+    function filterPdf(q) {
+        renderPdf(q.length < 1 ? allStudents : allStudents.filter(s =>
+            s.name.toLowerCase().includes(q.toLowerCase()) || s.roll_number.toLowerCase().includes(q.toLowerCase())));
+    }
+
+    function renderPdf(students) {
+        const el = document.getElementById('pdfList');
+        if (!students.length) {
+            el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px">No students found</div>';
+            return;
+        }
+        el.innerHTML = students.slice(0, 20).map(s => `
     <a href="/email/pdf/student/${s.id}"
        style="display:flex;align-items:center;gap:10px;padding:9px 14px;text-decoration:none;
               border-bottom:1px solid var(--border-subtle);transition:background .15s"
@@ -228,25 +420,27 @@ function renderPdf(list) {
       </div>
       <i class="bi bi-file-earmark-pdf" style="color:var(--red);font-size:15px;flex-shrink:0"></i>
     </a>`).join('');
-}
-
-async function loadLow() {
-  try {
-    const res = await fetch('/email/api/low-attendance');
-    const data = await res.json();
-    const badge = document.getElementById('lowBadge');
-    badge.textContent = data.total_low + ' students';
-    if (!data.students.length) {
-      document.getElementById('lowTable').innerHTML = `<div style="text-align:center;padding:32px;color:var(--green)">
-        <i class="bi bi-check-circle-fill" style="font-size:36px;display:block;margin-bottom:10px"></i>
-        <strong>Sab students ${data.threshold}% se upar hain!</strong></div>`;
-      badge.style.background = 'var(--green)'; return;
     }
-    badge.style.background = 'var(--red)';
-    document.getElementById('lowTable').innerHTML = `<div class="table-responsive">
+
+    async function loadLow() {
+        document.getElementById('lowBadge').textContent = '...';
+        try {
+            const res = await fetch('/email/api/low-attendance');
+            const data = await res.json();
+            const badge = document.getElementById('lowBadge');
+            badge.textContent = data.total_low + ' students';
+            if (!data.students.length) {
+                document.getElementById('lowTable').innerHTML = `<div style="text-align:center;padding:32px;color:var(--green)">
+        <i class="bi bi-check-circle-fill" style="font-size:36px;display:block;margin-bottom:10px"></i>
+        <strong style="font-size:15px">All students are above ${data.threshold}% attendance!</strong></div>`;
+                badge.style.background = 'var(--green)';
+                return;
+            }
+            badge.style.background = 'var(--red)';
+            document.getElementById('lowTable').innerHTML = `<div class="table-responsive">
       <table class="data-table" style="font-size:13px">
-        <thead><tr><th>#</th><th>Student</th><th>Roll No</th><th>Dept</th><th>%</th><th>Status</th></tr></thead>
-        <tbody>${data.students.map((s,i) => `<tr>
+        <thead><tr><th>#</th><th>Student</th><th>Roll No</th><th>Dept</th><th>Present/Total</th><th>%</th><th>Status</th></tr></thead>
+        <tbody>${data.students.map((s,i)=>`<tr>
           <td class="row-num">${i+1}</td>
           <td><div class="student-cell">
             <div class="student-avatar" style="width:30px;height:30px;font-size:11px">${s.name[0]}</div>
@@ -254,6 +448,7 @@ async function loadLow() {
           </div></td>
           <td><span class="code-badge">${s.roll_number}</span></td>
           <td style="color:var(--text-secondary)">${s.department}</td>
+          <td style="color:var(--text-secondary)">${s.days_present}/${s.working_days}</td>
           <td><span style="font-size:15px;font-weight:800;color:${s.percentage<50?'var(--red)':'var(--amber)'}">
             ${s.percentage}%</span></td>
           <td><span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
@@ -261,21 +456,25 @@ async function loadLow() {
             color:${s.status==='Critical'?'var(--red)':'var(--amber)'}">${s.status}</span></td>
         </tr>`).join('')}</tbody>
       </table></div>`;
-  } catch(e) { document.getElementById('lowTable').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Error</div>'; }
+  } catch(e) {
+    document.getElementById('lowTable').innerHTML='<div style="padding:20px;text-align:center;color:var(--text-muted)">Error loading data</div>';
+  }
 }
 
 function showResult(id, msg, type) {
-  const c = {success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
-             error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)']};
-  const [bg,bd,tc] = c[type]||c.error;
-  document.getElementById(id).innerHTML = `<div style="background:${bg};border:1px solid ${bd};
-    border-radius:var(--radius-sm);padding:12px 16px;color:${tc};font-size:13px;font-weight:600">${msg}</div>`;
+  const c={success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)','check-circle-fill'],
+           error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)','x-circle-fill'],
+           warn:['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)','exclamation-triangle-fill']};
+  const [bg,bd,tc,ico]=c[type]||c.error;
+  document.getElementById(id).innerHTML=`<div style="background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);padding:12px 16px;color:${tc};font-size:13px;font-weight:600">
+    <i class="bi bi-${ico} me-2"></i>${msg}</div>`;
 }
-function showToast(msg, type='success') {
+function showToast(msg,type='success') {
   const c={success:['var(--green-soft)','rgba(45,212,113,.3)','var(--green)'],
            error:['var(--red-soft)','rgba(255,92,92,.3)','var(--red)'],
-           warn:['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)']};
-  const[bg,bd,tc]=c[type]||c.success;
+           warn:['var(--amber-soft)','rgba(255,179,71,.3)','var(--amber)'],
+           info:['var(--accent-soft)','rgba(82,148,255,.3)','var(--accent)']};
+  const [bg,bd,tc]=c[type]||c.info;
   const t=document.createElement('div');
   t.style.cssText=`background:${bg};border:1px solid ${bd};border-radius:var(--radius-sm);
     padding:12px 18px;color:${tc};font-size:13.5px;font-weight:600;max-width:300px;box-shadow:var(--shadow-md)`;
