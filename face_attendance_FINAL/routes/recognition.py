@@ -10,8 +10,11 @@ from routes.auth import login_required
 recognition_bp = Blueprint("recognition", __name__, url_prefix="/recognition")
 
 ENCODINGS_FILE = "encodings.pickle"
-TOLERANCE      = 0.68   # More lenient for mobile camera
-MIN_CONF       = 25     # Low threshold — mobile angle varies a lot
+# TOLERANCE      = 0.68   # More lenient for mobile camera
+# MIN_CONF       = 25     # Low threshold — mobile angle varies a lot
+
+TOLERANCE = 0.55   # kam karo = zyada strict (0.45 tak ja sakte ho)
+MIN_CONF  = 55     # badao = zyada strict (65-70 tak)
 
 _enc_cache   = None
 _names_cache = None
