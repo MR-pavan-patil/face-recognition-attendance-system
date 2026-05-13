@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}500{% endblock %}
+{% block breadcrumb %}Error 500{% endblock %}
+{% block content %}
+<div class="coming-soon-wrapper">
+  <div class="coming-soon-card animate-in">
+    <div class="coming-soon-icon" style="color:var(--red)"><i class="bi bi-server"></i></div>
+    <h2 class="coming-soon-title">500 — Server Error</h2>
+    <p class="coming-soon-text">Something went wrong. Check your terminal for details.</p>
+    <a href="{{ url_for('dashboard') }}" class="btn-icon-primary">
+      <i class="bi bi-house-fill me-2"></i>Go to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Register Student{% endblock %}
+{% block breadcrumb %}Students / Register{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Register New Student</h1>
+    <p class="page-subtitle">
+      <i class="bi bi-info-circle me-1"></i>
+      Upload 5–10 clear face photos for best recognition accuracy
+    </p>
+  </div>
+  <a href="{{ url_for('students.list_students') }}" class="btn-icon-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Back to Students
+  </a>
+</div>
+
+<form id="registrationForm" method="POST"
+      action="{{ url_for('students.register') }}"
+      enctype="multipart/form-data" novalidate>
+  <div class="row g-4">
+
+    <!-- LEFT: Student Info -->
+    <div class="col-lg-7">
+      <div class="form-card animate-in" style="--delay:0.05s">
+        <div class="form-card-header">
+          <i class="bi bi-person-fill text-accent"></i>
+          <h5>Student Information</h5>
+        </div>
+        <div class="form-card-body">
+
+          <div class="field-group">
+            <label class="field-label" for="name">Full Name <span class="required-star">*</span></label>
+            <div class="input-wrap">
+              <i class="bi bi-person input-icon"></i>
+              <input type="text" class="form-field" id="name" name="name"
+                     placeholder="e.g. Rahul Sharma"
+                     value="{{ form_data.get('name','') if form_data else '' }}"
+                     required minlength="3" maxlength="100"/>
+            </div>
+            <span class="field-hint">Enter full name as per college records</span>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <div class="field-group">
+                <label class="field-label" for="roll_number">Roll Number <span class="required-star">*</span></label>
+                <div class="input-wrap">
+                  <i class="bi bi-hash input-icon"></i>
+                  <input type="text" class="form-field" id="roll_number" name="roll_number"
+                         placeholder="e.g. BCA2024001"
+                         value="{{ form_data.get('roll_number','') if form_data else '' }}"
+                         required maxlength="20"/>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="field-group">
+                <label class="field-label" for="email">Email <span class="required-star">*</span></label>
+                <div class="input-wrap">
+                  <i class="bi bi-envelope input-icon"></i>
+                  <input type="email" class="form-field" id="email" name="email"
+                         placeholder="student@example.com"
+                         value="{{ form_data.get('email','') if form_data else '' }}"
+                         required/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group mt-3">
+            <label class="field-label" for="phone">Phone Number</label>
+            <div class="input-wrap">
+              <i class="bi bi-telephone input-icon"></i>
+              <input type="tel" class="form-field" id="phone" name="phone"
+                     placeholder="e.g. 9876543210"
+                     value="{{ form_data.get('phone','') if form_data else '' }}"
+                     maxlength="15"/>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-5">
+              <div class="field-group">
+                <label class="field-label" for="department">Department <span class="required-star">*</span></label>
+                <div class="input-wrap">
+                  <i class="bi bi-building input-icon"></i>
+                  <select class="form-field form-select-field" id="department" name="department" required>
+                    <option value="" disabled {% if not form_data %}selected{% endif %}>Select Dept</option>
+                    {% for d in ["BCA","B.Sc CS","B.Sc IT","BBA","B.Com","B.Sc Maths","Other"] %}
+                    <option value="{{ d }}" {% if form_data and form_data.get('department')==d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="field-group">
+                <label class="field-label" for="year">Year <span class="required-star">*</span></label>
+                <div class="input-wrap">
+                  <i class="bi bi-calendar3 input-icon"></i>
+                  <select class="form-field form-select-field" id="year" name="year" required>
+                    <option value="" disabled {% if not form_data %}selected{% endif %}>Select</option>
+                    {% for y in ["1st Year","2nd Year","3rd Year"] %}
+                    <option value="{{ y }}" {% if form_data and form_data.get('year')==y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label" for="section">Section</label>
+                <div class="input-wrap">
+                  <i class="bi bi-grid input-icon"></i>
+                  <select class="form-field form-select-field" id="section" name="section">
+                    <option value="">None</option>
+                    {% for s in ["A","B","C","D"] %}
+                    <option value="{{ s }}" {% if form_data and form_data.get('section')==s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Photo Upload -->
+    <div class="col-lg-5">
+      <div class="form-card animate-in" style="--delay:0.15s">
+        <div class="form-card-header">
+          <i class="bi bi-camera-fill text-accent"></i>
+          <h5>Face Photos</h5>
+          <span class="badge-pill">5–10 photos</span>
+        </div>
+        <div class="form-card-body">
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-inner" id="dropZoneInner">
+              <div class="dz-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+              <p class="dz-title">Drop photos here</p>
+              <p class="dz-sub">or click to browse</p>
+              <p class="dz-formats">JPG, PNG, WEBP · Max 10 files</p>
+              <input type="file" id="photos" name="photos" multiple
+                     accept=".jpg,.jpeg,.png,.webp" class="dz-input"/>
+            </div>
+            <div class="preview-grid" id="previewGrid" style="display:none;">
+              <div class="preview-grid-header">
+                <span id="photoCount">0 photos selected</span>
+                <button type="button" class="clear-btn" id="clearPhotos">
+                  <i class="bi bi-x-circle me-1"></i>Clear All
+                </button>
+              </div>
+              <div class="preview-thumbs" id="previewThumbs"></div>
+              <label for="photos" class="add-more-btn">
+                <i class="bi bi-plus-circle me-1"></i>Add More Photos
+              </label>
+            </div>
+          </div>
+
+          <div class="photo-tips">
+            <p class="tips-title"><i class="bi bi-lightbulb-fill text-accent me-1"></i>Tips:</p>
+            <ul class="tips-list">
+              <li>Face clearly visible, front-facing</li>
+              <li>Good lighting, no shadows</li>
+              <li>With &amp; without glasses</li>
+              <li>Slight left/right angles</li>
+              <li>Solo photos only — no groups</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn animate-in" style="--delay:0.25s" id="submitBtn">
+        <span id="submitInner"><i class="bi bi-person-plus-fill me-2"></i>Register Student</span>
+        <span id="submitLoader" style="display:none;">
+          <span class="spinner-border spinner-border-sm me-2"></span>Registering...
+        </span>
+      </button>
+    </div>
+
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+{% endblock %}

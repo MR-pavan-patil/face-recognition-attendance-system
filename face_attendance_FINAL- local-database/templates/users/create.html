@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Create User{% endblock %}
+{% block breadcrumb %}Create User{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">➕ Create New User</h1>
+    <p class="page-subtitle"><i class="bi bi-shield-lock me-1"></i>Add admin, teacher, or student account</p>
+  </div>
+  <a href="{{ url_for('users.list_users') }}" class="btn-icon-secondary"><i class="bi bi-arrow-left me-2"></i>Back</a>
+</div>
+<div style="max-width:700px">
+  <form method="POST" class="form-card animate-in" style="--delay:0.05s">
+    <div class="form-card-header"><i class="bi bi-person-plus-fill text-accent"></i><h5>User Details</h5></div>
+    <div class="form-card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="field-label">Full Name <span class="required-star">*</span></label>
+          <div class="input-wrap"><i class="bi bi-person input-icon"></i>
+            <input type="text" name="name" class="form-field" placeholder="e.g. Prof. Sharma" required></div>
+        </div>
+        <div class="col-md-6">
+          <label class="field-label">Username <span class="required-star">*</span></label>
+          <div class="input-wrap"><i class="bi bi-at input-icon"></i>
+            <input type="text" name="username" class="form-field" placeholder="e.g. sharma_sir" required></div>
+        </div>
+        <div class="col-md-6">
+          <label class="field-label">Password <span class="required-star">*</span></label>
+          <div class="input-wrap"><i class="bi bi-lock input-icon"></i>
+            <input type="password" name="password" class="form-field" placeholder="Min 4 chars" required minlength="4"></div>
+        </div>
+        <div class="col-md-6">
+          <label class="field-label">Email</label>
+          <div class="input-wrap"><i class="bi bi-envelope input-icon"></i>
+            <input type="email" name="email" class="form-field" placeholder="Optional"></div>
+        </div>
+        <div class="col-md-6">
+          <label class="field-label">Role <span class="required-star">*</span></label>
+          <div class="input-wrap"><i class="bi bi-shield input-icon"></i>
+            <select name="role" id="roleSelect" class="form-field form-select-field" required onchange="toggleRoleFields()">
+              <option value="teacher">👨‍🏫 Teacher</option><option value="admin">🛡️ Admin</option><option value="student">🎓 Student</option>
+            </select></div>
+        </div>
+        <div class="col-md-6" id="deptField">
+          <label class="field-label">Department</label>
+          <div class="input-wrap"><i class="bi bi-building input-icon"></i>
+            <select name="department" class="form-field form-select-field">
+              <option value="">— Select —</option>
+              {% for d in departments %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+            </select></div>
+          <span class="field-hint">Teacher sees only this dept</span>
+        </div>
+        <div class="col-md-6" id="studentField" style="display:none">
+          <label class="field-label">Link to Student</label>
+          <div class="input-wrap"><i class="bi bi-person-badge input-icon"></i>
+            <select name="student_id" class="form-field form-select-field">
+              <option value="">— Select —</option>
+              {% for s in students %}<option value="{{ s.id }}">{{ s.name }} ({{ s.roll_number }})</option>{% endfor %}
+            </select></div>
+        </div>
+      </div>
+      <button type="submit" class="submit-btn mt-3"><i class="bi bi-person-plus-fill me-2"></i>Create User</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleRoleFields(){const r=document.getElementById('roleSelect').value;document.getElementById('deptField').style.display=r==='teacher'?'':'none';document.getElementById('studentField').style.display=r==='student'?'':'none'}
+toggleRoleFields();
+</script>
+{% endblock %}

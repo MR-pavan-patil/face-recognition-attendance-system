@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+{% block breadcrumb %}Users{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px">
+  <div>
+    <h1 class="page-title" style="margin:0">&#128101; User Management</h1>
+    <p class="page-subtitle">Manage accounts & approve registrations</p>
+  </div>
+  <a href="{{ url_for('users.create_user') }}" class="btn-action-primary">
+    <i class="bi bi-person-plus-fill"></i> Create User
+  </a>
+</div>
+
+<!-- PENDING APPROVALS -->
+{% if pending %}
+<div class="glass-card" style="margin-bottom:28px;border-color:rgba(251,191,36,.2)">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,.1);display:flex;align-items:center;justify-content:center">
+      <i class="bi bi-hourglass-split" style="font-size:18px;color:#fbbf24"></i>
+    </div>
+    <div>
+      <h2 style="font-size:17px;font-weight:800;color:var(--text-primary);margin:0">Pending Approvals</h2>
+      <p style="font-size:12px;color:#fbbf24;margin:0">{{ pending|length }} user{{ 's' if pending|length != 1 }} waiting for approval</p>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    {% for u in pending %}
+    <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);flex-wrap:wrap">
+      <div class="student-avatar" style="width:40px;height:40px;font-size:15px;background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(251,191,36,.05));color:#fbbf24;border:1px solid rgba(251,191,36,.2)">
+        {{ u.name[0] }}
+      </div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-weight:700;font-size:14px;color:var(--text-primary)">{{ u.name }}</div>
+        <div style="font-size:11.5px;color:var(--text-muted)">@{{ u.username }}{% if u.email %} &middot; {{ u.email }}{% endif %}</div>
+      </div>
+      <span class="role-badge role-{{ u.role }}" style="font-size:11px">{{ u.role|capitalize }}</span>
+      {% if u.department %}
+      <span style="font-size:11px;color:var(--text-muted);background:var(--bg-elevated);padding:3px 10px;border-radius:20px;border:1px solid var(--border-subtle)">{{ u.department }}</span>
+      {% endif %}
+      <span style="font-size:11px;color:var(--text-disabled)">{{ u.created_at.strftime('%d %b %Y, %I:%M %p') if u.created_at else '' }}</span>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <form method="POST" action="{{ url_for('users.approve_user', user_id=u.id) }}" style="margin:0">
+          <button type="submit" style="padding:8px 18px;background:linear-gradient(135deg,#34d399,#10b981);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:transform .15s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+            <i class="bi bi-check-lg"></i> Approve
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('users.reject_user', user_id=u.id) }}" style="margin:0" onsubmit="return confirm('Reject and delete this request?')">
+          <button type="submit" style="padding:8px 18px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.2);border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:transform .15s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+            <i class="bi bi-x-lg"></i> Reject
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- STATS ROW -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:28px">
+  {% set admins = users|selectattr('role','equalto','admin')|list|length %}
+  {% set teachers = users|selectattr('role','equalto','teacher')|list|length %}
+  {% set students_count = users|selectattr('role','equalto','student')|list|length %}
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(99,132,255,.1)"><i class="bi bi-shield-fill" style="color:#6384ff"></i></div>
+    <div class="stat-content"><div class="stat-number">{{ admins }}</div><div class="stat-label">ADMINS</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(167,139,250,.1)"><i class="bi bi-mortarboard-fill" style="color:#a78bfa"></i></div>
+    <div class="stat-content"><div class="stat-number">{{ teachers }}</div><div class="stat-label">TEACHERS</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:var(--green-soft)"><i class="bi bi-people-fill" style="color:var(--green)"></i></div>
+    <div class="stat-content"><div class="stat-number">{{ students_count }}</div><div class="stat-label">STUDENTS</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(251,191,36,.1)"><i class="bi bi-people-fill" style="color:#fbbf24"></i></div>
+    <div class="stat-content"><div class="stat-number">{{ users|length }}</div><div class="stat-label">TOTAL ACTIVE</div></div>
+  </div>
+</div>
+
+<!-- ALL ACTIVE USERS TABLE -->
+<div class="glass-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <h2 style="font-size:17px;font-weight:800;color:var(--text-primary);margin:0">
+      <i class="bi bi-people-fill" style="color:var(--accent)"></i> Active Users
+    </h2>
+    <span style="font-size:12px;color:var(--text-muted);background:var(--bg-elevated);padding:4px 12px;border-radius:20px;border:1px solid var(--border-subtle)">{{ users|length }} users</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th><th>User</th><th>Username</th><th>Role</th>
+          <th>Department</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="student-avatar" style="width:34px;height:34px;font-size:13px">{{ u.name[0] }}</div>
+              <div>
+                <div style="font-weight:700;font-size:13px;color:var(--text-primary)">{{ u.name }}</div>
+                <div style="font-size:11px;color:var(--text-muted)">{{ u.email or '---' }}</div>
+              </div>
+            </div>
+          </td>
+          <td><code style="background:var(--bg-elevated);padding:2px 8px;border-radius:5px;font-size:12px;color:var(--text-secondary)">{{ u.username }}</code></td>
+          <td><span class="role-badge role-{{ u.role }}"><i class="bi bi-{% if u.role=='admin' %}shield-fill{% elif u.role=='teacher' %}mortarboard-fill{% else %}person-fill{% endif %} me-1"></i>{{ u.role|capitalize }}</span></td>
+          <td style="color:var(--text-muted);font-size:13px">{{ u.department or '---' }}</td>
+          <td><span class="status-badge {% if u.is_active %}status-present{% else %}status-absent{% endif %}">{{ 'Active' if u.is_active else 'Disabled' }}</span></td>
+          <td>
+            {% if u.role != 'admin' or (users|selectattr('role','equalto','admin')|list|length > 1) %}
+            <form method="POST" action="{{ url_for('users.delete_user', user_id=u.id) }}" style="display:inline" onsubmit="return confirm('Delete user {{ u.name }}?')">
+              <button type="submit" class="btn-icon-danger" title="Delete"><i class="bi bi-trash3-fill"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not users %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No active users found</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

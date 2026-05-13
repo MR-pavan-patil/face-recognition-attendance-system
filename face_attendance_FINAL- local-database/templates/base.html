@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FaceAttend — {% block title %}Dashboard{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><i class="bi bi-camera-video-fill"></i></div>
+    <div class="brand-text">
+      <span class="brand-name">FaceAttend</span>
+      <span class="brand-sub">Attendance Management System</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    {% set role = session.get('user_role', 'admin') %}
+
+    {% if role == 'student' %}
+    <!-- STUDENT SIDEBAR -->
+    <p class="nav-section-label">My Account</p>
+    <a href="{{ url_for('student_dashboard.my_dashboard') }}"
+       class="nav-link-item {% if active_page == 'my_dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i><span>My Dashboard</span>
+      {% if active_page == 'my_dashboard' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    {% else %}
+    <!-- ADMIN / TEACHER SIDEBAR -->
+    <p class="nav-section-label">Main Menu</p>
+
+    <a href="{{ url_for('dashboard') }}"
+       class="nav-link-item {% if active_page == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      {% if active_page == 'dashboard' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <a href="{{ url_for('students.list_students') }}"
+       class="nav-link-item {% if active_page == 'students' %}active{% endif %}">
+      <i class="bi bi-people-fill"></i><span>Students</span>
+      {% if active_page == 'students' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <a href="{{ url_for('recognition.index') }}"
+       class="nav-link-item {% if active_page == 'recognition' %}active{% endif %}">
+      <i class="bi bi-camera-video-fill"></i><span>Live Recognition</span>
+      {% if active_page == 'recognition' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <p class="nav-section-label mt-3">Records</p>
+
+    <a href="{{ url_for('attendance.today_attendance') }}"
+       class="nav-link-item {% if active_page == 'attendance' %}active{% endif %}">
+      <i class="bi bi-calendar-check-fill"></i><span>Attendance</span>
+      {% if active_page == 'attendance' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <a href="{{ url_for('attendance.absent_list') }}"
+       class="nav-link-item {% if active_page == 'absent' %}active{% endif %}">
+      <i class="bi bi-person-x-fill"></i><span>Absent List</span>
+      {% if active_page == 'absent' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <a href="{{ url_for('reports.summary') }}"
+       class="nav-link-item {% if active_page == 'reports' %}active{% endif %}">
+      <i class="bi bi-bar-chart-line-fill"></i><span>Reports</span>
+      {% if active_page == 'reports' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    <a href="{{ url_for('analytics.index') }}"
+       class="nav-link-item {% if active_page == 'analytics' %}active{% endif %}">
+      <i class="bi bi-graph-up-arrow"></i><span>Analytics</span>
+      {% if active_page == 'analytics' %}<span class="nav-active-dot"></span>{% endif %}
+      <span class="nav-badge" style="background:var(--green-soft);color:var(--green);border-color:rgba(45,212,113,.2)">NEW</span>
+    </a>
+
+    <a href="{{ url_for('email_report.email_alerts_page') }}"
+       class="nav-link-item {% if active_page == 'email' %}active{% endif %}">
+      <i class="bi bi-envelope-fill"></i><span>Email & Alerts</span>
+      {% if active_page == 'email' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+
+    {% if role == 'admin' %}
+    <p class="nav-section-label mt-3">Admin</p>
+
+    <a href="{{ url_for('users.list_users') }}"
+       class="nav-link-item {% if active_page == 'users' %}active{% endif %}">
+      <i class="bi bi-shield-lock-fill"></i><span>User Management</span>
+      {% if active_page == 'users' %}<span class="nav-active-dot"></span>{% endif %}
+      <span class="nav-badge" id="pendingBadge" style="background:rgba(251,191,36,.12);color:#fbbf24;border-color:rgba(251,191,36,.2);display:none"></span>
+    </a>
+
+    <a href="{{ url_for('settings.index') }}"
+       class="nav-link-item {% if active_page == 'settings' %}active{% endif %}">
+      <i class="bi bi-gear-fill"></i><span>Settings</span>
+      {% if active_page == 'settings' %}<span class="nav-active-dot"></span>{% endif %}
+    </a>
+    {% endif %}
+    {% endif %}
+
+    <p class="nav-section-label mt-3">Account</p>
+    <a href="{{ url_for('auth.logout') }}" class="nav-link-item">
+      <i class="bi bi-box-arrow-left"></i><span>Logout</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="dev-badge" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <span style="font-size:10.5px;color:var(--text-disabled)">
+        {{ session.get('user_name', 'Admin') }} ·
+        <span class="role-badge role-{{ role }}" style="font-size:9px;padding:1px 6px">{{ role|capitalize }}</span>
+      </span>
+      <span style="color:var(--accent);font-size:11px;font-weight:600">Made with ❤️ by Pavan Patil</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN WRAPPER -->
+<div class="main-wrapper" id="mainWrapper">
+
+  <!-- TOP NAVBAR -->
+  <header class="top-navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle-btn" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="page-breadcrumb">
+        <span class="breadcrumb-root">FaceAttend</span>
+        <i class="bi bi-chevron-right breadcrumb-sep"></i>
+        <span class="breadcrumb-current">{% block breadcrumb %}Dashboard{% endblock %}</span>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <div class="live-clock" id="liveClock">
+        <i class="bi bi-clock"></i>
+        <span id="clockDisplay">--:--:--</span>
+      </div>
+      <div class="role-badge role-{{ role }}" style="font-size:11px;padding:5px 12px">
+        <i class="bi bi-{% if role == 'admin' %}shield-fill{% elif role == 'teacher' %}mortarboard-fill{% else %}person-fill{% endif %} me-1"></i>
+        {{ role|capitalize }}
+      </div>
+      <div class="status-chip online">
+        <span class="status-dot"></span>Online
+      </div>
+      <a href="{{ url_for('auth.logout') }}"
+         class="admin-avatar" title="Logout"
+         style="text-decoration:none">
+        <i class="bi bi-person-fill"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- FLASH MESSAGES -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-alert flash-{{ category }} animate-in" role="alert">
+          <i class="bi bi-{% if category=='success' %}check-circle-fill{% elif category=='error' %}exclamation-triangle-fill{% elif category=='warning' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %}"></i>
+          <span>{{ message }}</span>
+          <button class="flash-close" onclick="this.parentElement.remove()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- PAGE CONTENT -->
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+{% if session.get('user_role') == 'admin' %}
+<script>
+fetch('/users/api/pending-count').then(r=>r.json()).then(d=>{
+  const b=document.getElementById('pendingBadge');
+  if(b&&d.count>0){b.textContent=d.count;b.style.display='inline-flex'}
+}).catch(()=>{});
+</script>
+{% endif %}
+</body>
+</html>

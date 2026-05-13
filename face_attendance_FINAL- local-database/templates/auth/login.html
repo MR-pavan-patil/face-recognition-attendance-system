@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FaceAttend — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#050a18;--bg-card:#0a1128;--bg-card2:#0d1630;--bg-input:#111c3a;
+      --border:rgba(255,255,255,0.06);--border-focus:rgba(99,132,255,0.5);
+      --accent:#6384ff;--accent2:#a78bfa;--accent-glow:rgba(99,132,255,0.25);
+      --green:#34d399;--green-soft:rgba(52,211,153,0.1);
+      --red:#f87171;--amber:#fbbf24;
+      --text:#f0f4ff;--text2:#8b9ec6;--text3:#4a5e85;
+      --radius:16px;
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow-x:hidden;position:relative}
+
+    /* Animated mesh background */
+    .mesh{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+    .mesh-orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.08;animation:drift 12s ease-in-out infinite}
+    .mesh-orb:nth-child(1){width:600px;height:600px;background:#6384ff;top:-15%;left:-10%;animation-delay:0s}
+    .mesh-orb:nth-child(2){width:500px;height:500px;background:#a78bfa;bottom:-10%;right:-10%;animation-delay:4s}
+    .mesh-orb:nth-child(3){width:350px;height:350px;background:#34d399;top:40%;left:60%;animation-delay:8s}
+    @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-25px) scale(1.05)}66%{transform:translate(-20px,15px) scale(.95)}}
+
+    /* Grid pattern */
+    body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(99,132,255,.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:1}
+
+    /* Layout */
+    .auth-wrapper{position:relative;z-index:10;width:100%;max-width:960px;padding:20px;display:flex;gap:0;min-height:600px}
+
+    /* Left Panel — Branding */
+    .auth-left{flex:1;background:linear-gradient(135deg,rgba(99,132,255,.12),rgba(167,139,250,.08));border:1px solid var(--border);border-radius:var(--radius) 0 0 var(--radius);padding:48px 40px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+    .auth-left::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}
+    .auth-left::after{content:'';position:absolute;bottom:-80px;right:-80px;width:250px;height:250px;background:radial-gradient(circle,rgba(99,132,255,.15),transparent 70%);border-radius:50%}
+
+    .left-logo{width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:24px;box-shadow:0 8px 32px var(--accent-glow)}
+    .left-title{font-size:32px;font-weight:900;color:var(--text);letter-spacing:-.5px;line-height:1.1}
+    .left-title span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .left-sub{font-size:14px;color:var(--text2);margin-top:12px;line-height:1.6}
+
+    .feature-list{margin-top:32px;display:flex;flex-direction:column;gap:14px}
+    .feature-item{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)}
+    .feature-dot{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .f-blue{background:rgba(99,132,255,.12);color:var(--accent)}
+    .f-green{background:var(--green-soft);color:var(--green)}
+    .f-purple{background:rgba(167,139,250,.12);color:var(--accent2)}
+
+    /* Right Panel — Forms */
+    .auth-right{flex:1;background:var(--bg-card);border:1px solid var(--border);border-left:none;border-radius:0 var(--radius) var(--radius) 0;padding:40px 36px;display:flex;flex-direction:column;justify-content:center}
+
+    /* Tabs */
+    .tab-bar{display:flex;gap:4px;background:var(--bg-input);border-radius:12px;padding:4px;margin-bottom:28px}
+    .tab-btn{flex:1;padding:11px 0;text-align:center;font-size:13px;font-weight:700;color:var(--text3);border:none;background:none;border-radius:9px;cursor:pointer;transition:all .25s;letter-spacing:.3px}
+    .tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 16px var(--accent-glow)}
+    .tab-btn:not(.active):hover{color:var(--text2)}
+
+    /* Form panels */
+    .form-panel{display:none}.form-panel.active{display:block;animation:fadeSlide .35s ease}
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+    .form-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px}
+    .form-sub{font-size:12.5px;color:var(--text3);margin-bottom:24px}
+
+    /* Fields */
+    .field{margin-bottom:18px}
+    .field-label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+    .field-wrap{position:relative}
+    .field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;transition:color .2s}
+    .field-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13.5px;font-family:inherit;padding:12px 14px 12px 40px;outline:none;transition:border-color .2s,box-shadow .2s}
+    .field-input::placeholder{color:var(--text3)}
+    .field-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-glow)}
+    .field-input:focus~.field-icon{color:var(--accent)}
+
+    .field-select{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13.5px;font-family:inherit;padding:12px 14px 12px 40px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none}
+    .field-select option{background:var(--bg-card);color:var(--text)}
+    .field-select:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-glow)}
+
+    .field-row{display:flex;gap:12px}
+    .field-row .field{flex:1}
+
+    .pwd-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:4px;transition:color .2s}
+    .pwd-toggle:hover{color:var(--text)}
+
+    /* Buttons */
+    .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),#4f6ef7);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s,box-shadow .2s;box-shadow:0 4px 20px var(--accent-glow)}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px var(--accent-glow)}
+    .btn-primary:active{transform:translateY(0)}
+
+    .btn-register{background:linear-gradient(135deg,var(--accent2),#8b5cf6)}
+
+    /* Alerts */
+    .alert{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:12.5px;font-weight:600;margin-bottom:18px}
+    .alert-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--red)}
+    .alert-success{background:var(--green-soft);border:1px solid rgba(52,211,153,.2);color:var(--green)}
+    .alert-pending{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);color:var(--amber)}
+
+    /* Role cards */
+    .role-cards{display:flex;gap:8px;margin-bottom:18px}
+    .role-card{flex:1;padding:14px 10px;border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-card2)}
+    .role-card:hover{border-color:rgba(99,132,255,.3)}
+    .role-card.selected{border-color:var(--accent);background:rgba(99,132,255,.06);box-shadow:0 0 0 1px var(--accent)}
+    .role-card input{display:none}
+    .role-card-icon{font-size:22px;margin-bottom:4px}
+    .role-card-name{font-size:12px;font-weight:700;color:var(--text);letter-spacing:.3px}
+    .role-card-desc{font-size:10px;color:var(--text3);margin-top:2px}
+
+    /* Footer */
+    .auth-footer{text-align:center;margin-top:20px;font-size:11.5px;color:var(--text3)}
+    .auth-footer span{color:var(--accent);font-weight:600}
+
+    /* Mobile */
+    @media(max-width:768px){
+      .auth-wrapper{flex-direction:column;max-width:440px}
+      .auth-left{border-radius:var(--radius) var(--radius) 0 0;padding:32px 28px}
+      .auth-left .feature-list{display:none}
+      .auth-right{border-left:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:28px 24px}
+      .left-title{font-size:24px}
+      .field-row{flex-direction:column;gap:0}
+    }
+
+    /* Animate in */
+    .auth-wrapper{animation:slideUp .5s cubic-bezier(.16,1,.3,1) both}
+    @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+  <div class="mesh"><div class="mesh-orb"></div><div class="mesh-orb"></div><div class="mesh-orb"></div></div>
+
+  <div class="auth-wrapper">
+    <!-- LEFT BRANDING PANEL -->
+    <div class="auth-left">
+      <div class="left-logo"><i class="bi bi-camera-video-fill"></i></div>
+      <div class="left-title">Face<span>Attend</span></div>
+      <div class="left-sub">AI-powered face recognition attendance system with role-based access control</div>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-dot f-blue"><i class="bi bi-camera-fill"></i></div>
+          <span>Real-time face recognition attendance</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot f-green"><i class="bi bi-graph-up-arrow"></i></div>
+          <span>Advanced analytics & trend charts</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot f-purple"><i class="bi bi-shield-check"></i></div>
+          <span>Admin, Teacher & Student roles</span>
+        </div>
+      </div>
+
+      <div class="auth-footer" style="margin-top:auto;padding-top:32px;text-align:left">
+        Made with <span style="color:var(--red)">&#10084;</span> by <span>Pavan Patil</span>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM PANEL -->
+    <div class="auth-right">
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-btn {% if mode != 'register' %}active{% endif %}" onclick="switchTab('login')" id="tabLogin">
+          <i class="bi bi-box-arrow-in-right me-1"></i> Login
+        </button>
+        <button class="tab-btn {% if mode == 'register' %}active{% endif %}" onclick="switchTab('register')" id="tabRegister">
+          <i class="bi bi-person-plus me-1"></i> Sign Up
+        </button>
+      </div>
+
+      <!-- ═══ LOGIN FORM ═══ -->
+      <div class="form-panel {% if mode != 'register' %}active{% endif %}" id="loginPanel">
+        <div class="form-title">Welcome back</div>
+        <div class="form-sub">Sign in to your account to continue</div>
+
+        {% if error %}
+        <div class="alert alert-error"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+        {% endif %}
+        {% if reg_success %}
+        <div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> {{ reg_success }}</div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for cat, msg in messages %}
+          <div class="alert alert-{{ 'error' if cat=='error' else ('success' if cat=='success' else 'pending') }}">
+            <i class="bi bi-{% if cat=='success' %}check-circle-fill{% elif cat=='error' %}x-circle-fill{% else %}info-circle-fill{% endif %}"></i> {{ msg }}
+          </div>
+          {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}" id="loginForm">
+          <input type="hidden" name="form_type" value="login"/>
+
+          <div class="field">
+            <label class="field-label">Username</label>
+            <div class="field-wrap">
+              <input type="text" name="username" class="field-input" placeholder="Enter your username" required autocomplete="username"/>
+              <i class="bi bi-person field-icon"></i>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Password</label>
+            <div class="field-wrap">
+              <input type="password" name="password" id="loginPwd" class="field-input" placeholder="Enter your password" required autocomplete="current-password" style="padding-right:42px"/>
+              <i class="bi bi-lock field-icon"></i>
+              <button type="button" class="pwd-toggle" onclick="togglePwd('loginPwd','loginEye')"><i class="bi bi-eye" id="loginEye"></i></button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="loginBtn">
+            <i class="bi bi-arrow-right-circle-fill"></i> Login
+          </button>
+        </form>
+
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text3)">
+          Don't have an account?
+          <a href="#" onclick="switchTab('register');return false" style="color:var(--accent);font-weight:700;text-decoration:none"> Create one</a>
+        </div>
+      </div>
+
+      <!-- ═══ REGISTER FORM ═══ -->
+      <div class="form-panel {% if mode == 'register' %}active{% endif %}" id="registerPanel">
+        <div class="form-title">Create Account</div>
+        <div class="form-sub">Sign up and wait for admin approval</div>
+
+        {% if reg_error %}
+        <div class="alert alert-error"><i class="bi bi-exclamation-triangle-fill"></i> {{ reg_error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}?mode=register" id="regForm">
+          <input type="hidden" name="form_type" value="register"/>
+
+          <!-- Role Selection Cards -->
+          <label class="field-label">I am a</label>
+          <div class="role-cards">
+            <label class="role-card selected" id="rc_teacher" onclick="selectRole('teacher')">
+              <input type="radio" name="reg_role" value="teacher" checked/>
+              <div class="role-card-icon">&#127891;</div>
+              <div class="role-card-name">Teacher</div>
+              <div class="role-card-desc">Faculty member</div>
+            </label>
+            <label class="role-card" id="rc_student" onclick="selectRole('student')">
+              <input type="radio" name="reg_role" value="student"/>
+              <div class="role-card-icon">&#127891;</div>
+              <div class="role-card-name">Student</div>
+              <div class="role-card-desc">Enrolled student</div>
+            </label>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Full Name *</label>
+              <div class="field-wrap">
+                <input type="text" name="reg_name" class="field-input" placeholder="Your name" required/>
+                <i class="bi bi-person-badge field-icon"></i>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Username *</label>
+              <div class="field-wrap">
+                <input type="text" name="reg_username" class="field-input" placeholder="Choose username" required/>
+                <i class="bi bi-at field-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Email</label>
+              <div class="field-wrap">
+                <input type="email" name="reg_email" class="field-input" placeholder="Optional"/>
+                <i class="bi bi-envelope field-icon"></i>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Department</label>
+              <div class="field-wrap">
+                <select name="reg_department" class="field-select">
+                  <option value="">Select department</option>
+                  {% for d in departments %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+                </select>
+                <i class="bi bi-building field-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Password *</label>
+              <div class="field-wrap">
+                <input type="password" name="reg_password" id="regPwd" class="field-input" placeholder="Min 4 chars" required style="padding-right:42px"/>
+                <i class="bi bi-lock field-icon"></i>
+                <button type="button" class="pwd-toggle" onclick="togglePwd('regPwd','regEye')"><i class="bi bi-eye" id="regEye"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Confirm *</label>
+              <div class="field-wrap">
+                <input type="password" name="reg_confirm" class="field-input" placeholder="Re-enter" required/>
+                <i class="bi bi-shield-lock field-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary btn-register">
+            <i class="bi bi-person-plus-fill"></i> Create Account
+          </button>
+        </form>
+
+        <div class="alert alert-pending" style="margin-top:16px;margin-bottom:0">
+          <i class="bi bi-hourglass-split"></i> After signup, admin will approve your account
+        </div>
+
+        <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text3)">
+          Already have an account?
+          <a href="#" onclick="switchTab('login');return false" style="color:var(--accent);font-weight:700;text-decoration:none"> Login here</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.getElementById('loginPanel').classList.toggle('active', tab === 'login');
+      document.getElementById('registerPanel').classList.toggle('active', tab === 'register');
+      document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+      document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+    }
+
+    function togglePwd(inputId, iconId) {
+      const inp = document.getElementById(inputId);
+      const ico = document.getElementById(iconId);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      ico.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+    }
+
+    function selectRole(role) {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('rc_' + role).classList.add('selected');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function() {
+      const btn = document.getElementById('loginBtn');
+      btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Logging in...';
+      btn.style.opacity = '0.7';
+    });
+  </script>
+</body>
+</html>

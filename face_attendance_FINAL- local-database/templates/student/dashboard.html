@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard{% endblock %}
+{% block breadcrumb %}My Dashboard{% endblock %}
+{% block content %}
+{% if not student %}
+<div class="empty-state"><i class="bi bi-person-x"></i><h5>Account not linked</h5><p>Your account is not linked to a student record. Contact admin.</p></div>
+{% else %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Hello, {{ student.name }} 👋</h1>
+    <p class="page-subtitle"><i class="bi bi-person-badge me-1"></i>{{ student.roll_number }} · {{ student.department }} · {{ student.year }}</p>
+  </div>
+  <div>
+    {% if today_marked %}
+    <span class="status-pill ready" style="font-size:14px;padding:10px 20px"><i class="bi bi-check-circle-fill me-1"></i>Present Today{% if today_time %} · {{ today_time }}{% endif %}</span>
+    {% else %}
+    <span class="status-pill pending" style="font-size:14px;padding:10px 20px"><i class="bi bi-clock me-1"></i>Not Marked Yet</span>
+    {% endif %}
+  </div>
+</div>
+<!-- Stats -->
+<div class="stats-grid animate-in" style="--delay:0.05s">
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap percent"><i class="bi bi-percent"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Attendance (30d)</span>
+        <span class="stat-value">{{ pct }}<span style="font-size:22px;color:var(--text-muted)">%</span></span>
+        <span class="stat-change {% if pct >= 75 %}positive{% elif pct >= 50 %}neutral{% else %}negative{% endif %}">{{ status }}</span>
+      </div>
+    </div><div class="stat-glow percent-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap present"><i class="bi bi-calendar-check-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Days Present</span>
+        <span class="stat-value">{{ days_present }}</span>
+        <span class="stat-change neutral">of {{ working_days }} working days</span>
+      </div>
+    </div><div class="stat-glow present-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap total"><i class="bi bi-fire"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Current Streak</span>
+        <span class="stat-value">{{ streak }}</span>
+        <span class="stat-change positive">consecutive days</span>
+      </div>
+    </div><div class="stat-glow total-glow"></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-inner">
+      <div class="stat-icon-wrap absent"><i class="bi bi-calendar-x-fill"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Days Absent</span>
+        <span class="stat-value">{{ working_days - days_present }}</span>
+        <span class="stat-change negative">missed</span>
+      </div>
+    </div><div class="stat-glow absent-glow"></div>
+  </div>
+</div>
+<!-- Calendar + Trend -->
+<div class="responsive-grid-2 animate-in mt-4" style="--delay:0.1s">
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-calendar3 me-2 text-accent"></i>Last 30 Days</h5>
+    </div>
+    <div class="info-card-body">
+      <div class="student-calendar-grid">
+        {% for c in calendar %}
+        <div class="cal-day {% if c.today %}cal-today{% endif %} {% if c.sunday %}cal-sunday{% elif c.present %}cal-present{% else %}cal-absent{% endif %}" title="{{ c.date_full }}">
+          <span class="cal-day-name">{{ c.day }}</span>
+          <span class="cal-day-num">{{ c.date }}</span>
+          {% if c.sunday %}<i class="bi bi-dash"></i>
+          {% elif c.present %}<i class="bi bi-check-circle-fill"></i>
+          {% else %}<i class="bi bi-x-circle"></i>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="info-card">
+    <div class="info-card-header">
+      <h5 class="info-card-title"><i class="bi bi-graph-up me-2 text-accent"></i>Attendance Trend</h5>
+    </div>
+    <div class="info-card-body" style="padding:20px 24px">
+      <canvas id="myTrendChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+<!-- Recent Records -->
+<div class="info-card animate-in mt-4" style="--delay:0.15s">
+  <div class="info-card-header">
+    <h5 class="info-card-title"><i class="bi bi-clock-history me-2 text-accent"></i>Recent Attendance</h5>
+  </div>
+  <div class="info-card-body" style="padding:0">
+    {% if recent %}
+    {% for r in recent %}
+    <div style="display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--border-subtle)">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px;color:var(--text-primary)">{{ r.date.strftime('%d %b %Y') }} · {{ r.date.strftime('%A') }}</div>
+      </div>
+      <div style="text-align:right">
+        <span style="color:var(--green);font-weight:700;font-size:12.5px">{{ r.time_in.strftime('%I:%M %p') if r.time_in else '--' }}</span>
+        <div style="font-size:10px;color:var(--text-muted)">{{ r.marked_by }}</div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center;padding:30px;color:var(--text-muted)">No recent records</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+fetch('/my/api/trend').then(r=>r.json()).then(d=>{
+  const ctx=document.getElementById('myTrendChart');
+  if(!ctx||!d.data.length)return;
+  new Chart(ctx,{type:'line',data:{
+    labels:d.data.map(x=>x.date),
+    datasets:[{label:'Present',data:d.data.map(x=>x.present),borderColor:'#2dd471',backgroundColor:'rgba(45,212,113,0.1)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#2dd471'}]
+  },options:{responsive:true,plugins:{legend:{display:false}},scales:{
+    x:{ticks:{color:'#4e6080',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+    y:{min:0,max:1.2,ticks:{display:false},grid:{color:'rgba(255,255,255,0.04)'}}
+  }}});
+});
+</script>
+{% endblock %}
